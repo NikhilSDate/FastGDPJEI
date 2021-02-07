@@ -1,0 +1,465 @@
+{
+    "0": {
+        "text": "In circle O, diameter AB is perpendicular to chord CD at E. If CD = 8 and BE = 2, find AE.",
+        "entities": [
+            [
+                10,
+                10,
+                "CIRCLE"
+            ],
+            [
+                22,
+                23,
+                "LINE"
+            ],
+            [
+                51,
+                52,
+                "LINE"
+            ],
+            [
+                57,
+                57,
+                "POINT"
+            ],
+            [
+                63,
+                64,
+                "LINE"
+            ],
+            [
+                74,
+                75,
+                "LINE"
+            ],
+            [
+                87,
+                88,
+                "LINE"
+            ]
+        ]
+    },
+    "1": {
+        "text": "The diagram at the right shows the construction of the perpendicular bisector of AB. Which statement is not true?",
+        "entities": [
+            [
+                81,
+                82,
+                "LINE"
+            ]
+        ]
+    },
+    "2": {
+        "text": "The diagram below illustrates the construction of line PS parallel to line RQ through point P. Which statement justifies this construction?",
+        "entities": [
+            [
+                55,
+                56,
+                "LINE"
+            ],
+            [
+                75,
+                76,
+                "LINE"
+            ],
+            [
+                92,
+                92,
+                "POINT"
+            ]
+        ]
+    },
+    "3": {
+        "text": "Given triangle ABC with base AFEDC, median BF, altitude BD, and BE bisects angle ABC, which conclusion is valid?",
+        "entities": [
+            [
+                15,
+                17,
+                "TRIANGLE"
+            ],
+            [
+                29,
+                33,
+                "LINE"
+            ],
+            [
+                43,
+                44,
+                "LINE"
+            ],
+            [
+                56,
+                57,
+                "LINE"
+            ],
+            [
+                64,
+                65,
+                "LINE"
+            ],
+            [
+                81,
+                83,
+                "ANGLE"
+            ]
+        ]
+    },
+    "4": {
+        "text": "In the diagram below of triangle ABC, D is a point on line AB, AC = 7, AD = 6, and BC = 18. Which of the following could be the length of line DB?",
+        "entities": [
+            [
+                33,
+                35,
+                "TRIANGLE"
+            ],
+            [
+                38,
+                38,
+                "POINT"
+            ],
+            [
+                59,
+                60,
+                "LINE"
+            ],
+            [
+                63,
+                64,
+                "LINE"
+            ],
+            [
+                71,
+                72,
+                "LINE"
+            ],
+            [
+                83,
+                84,
+                "LINE"
+            ],
+            [
+                143,
+                144,
+                "LINE"
+            ]
+        ]
+    },
+    "5": {
+        "text": "In triangle ABC, line DE is parallel with line AC, DB = 4, AD = 8, and DE = 5. Find AC.",
+        "entities": [
+            [
+                12,
+                14,
+                "TRIANGLE"
+            ],
+            [
+                22,
+                23,
+                "LINE"
+            ],
+            [
+                47,
+                48,
+                "LINE"
+            ],
+            [
+                51,
+                52,
+                "LINE"
+            ],
+            [
+                59,
+                60,
+                "LINE"
+            ],
+            [
+                71,
+                72,
+                "LINE"
+            ],
+            [
+                84,
+                85,
+                "LINE"
+            ]
+        ]
+    },
+    "6": {
+        "text": "The diagram at the right is a construction involving angle ABC. Which of the following statement is not true?",
+        "entities": [
+            [
+                59,
+                61,
+                "ANGLE"
+            ]
+        ]
+    },
+    "7": {
+        "text": "In the rhombus PQRS, PR = 24 and QS = 10. Find the perimeter of the rhombus.",
+        "entities": [
+            [
+                15,
+                18,
+                "RHOMBUS"
+            ],
+            [
+                21,
+                22,
+                "LINE"
+            ],
+            [
+                33,
+                34,
+                "LINE"
+            ]
+        ]
+    },
+    "8": {
+        "text": "In circle O, secant SD intersects the circle at C and secant SB intersects the circle at A. If SC = 6, CD = 8, and SA = 4, find AB.",
+        "entities": [
+            [
+                10,
+                10,
+                "CIRCLE"
+            ],
+            [
+                20,
+                21,
+                "LINE"
+            ],
+            [
+                48,
+                48,
+                "POINT"
+            ],
+            [
+                61,
+                62,
+                "LINE"
+            ],
+            [
+                89,
+                89,
+                "POINT"
+            ],
+            [
+                95,
+                96,
+                "LINE"
+            ],
+            [
+                103,
+                104,
+                "LINE"
+            ],
+            [
+                115,
+                116,
+                "LINE"
+            ],
+            [
+                128,
+                129,
+                "LINE"
+            ]
+        ]
+    },
+    "9": {
+        "text": "In triangle ABC, line BC is extended to E, and D is a point on line BC. Which of the following must be true?",
+        "entities": [
+            [
+                12,
+                14,
+                "TRIANGLE"
+            ],
+            [
+                22,
+                23,
+                "LINE"
+            ],
+            [
+                40,
+                40,
+                "POINT"
+            ],
+            [
+                47,
+                47,
+                "POINT"
+            ],
+            [
+                68,
+                69,
+                "LINE"
+            ]
+        ]
+    },
+    "10": {
+        "text": "In the accompanying diagram of right triangle ABC, altitude AD divides hypotenuse BC into segments with lenghts of 4 and 5. Find the length of leg AB."
+    },
+    "11": {
+        "text": "In the accompanying diagram, line AB is parallel with line CD and line FHE, AEF = 40, and FHG = 60. Find the measure of angle HGD."
+    },
+    "12": {
+        "text": "In the accompanying diagram, line PQ and line PS are tangents drawn to circle O, and chord QS is drawn. If the measure of angle P is equal to 40, what is the measure of angle PQS?"
+    },
+    "13": {
+        "text": "In the accompanying diagram of circle O, chords AB and CD intersect at E and AC : CB : BD : DA = 4 : 2 : 6 : 8. What is measure of the angle DEB?"
+    },
+    "14": {
+        "text": "In the accompanying diagram, ABC is an equilateral triangle with a perimeter of 30. What is the length of altitude h of this triangle?"
+    },
+    "15": {
+        "text": "The diagram at the right shows the construction of a perpendicular, line PX, to a line l from point P. The arc drawn from point P intersects line l at A and B, and the arcs drawn from points A and B intersect line PX at C.  Which of the statements is not always true about this construction?"
+    },
+    "16": {
+        "text": "In the diagram at the right, the segments shown are tangent to the circle.  Find the value of x."
+    },
+    "17": {
+        "text": "Given Circle O with diameter CD. AB is parallel with CD and AB=80*\\degree. Find angle of arc CA."
+    },
+    "18": {
+        "text": "Given the circle at the right with two intersecting chords. Find x."
+    },
+    "19": {
+        "text": "In the accompanying diagram, tangent AB and secant AD are drawn to circle O from point A, AB = 6 and AC = 4. Find AD."
+    },
+    "20": {
+        "text": "In the accompanying diagram of circle O, the measure of angle ABC is 2*x and the measure of arc AC is x+60. Find the value of x."
+    },
+    "21": {
+        "text": "In the diagram at the right, secant AB intersects circle O at D, secant AC intersects circle O at E, AE = 4, AC = 24, and AB = 16. Find AD."
+    },
+    "22": {
+        "text": "Given the circle at the right with diameter AB, find x."
+    },
+    "23": {
+        "text": "Given a circle with the center indicated. Find x."
+    },
+    "24": {
+        "text": "A cathedral window is built in the shape of a semicircle.  If the window is to contain three stained glass sections of equal size, what is the area of each stained glass section?  Express answer to the nearest square foot."
+    },
+    "25": {
+        "text": "Given tangent AC to the circle shown at the right. Find the measure of the arc designated by x."
+    },
+    "26": {
+        "text": "Given a circle with two secants as shown at the right.  Find the measure of the arc designated by x."
+    },
+    "27": {
+        "text": "Given the circle at the right with the indicated center.  Find the measure of the angle designated by x."
+    },
+    "28": {
+        "text": "Given the circle at the right with two tangents to the circle from a common external point.  Find the measure of the angle designated by x."
+    },
+    "29": {
+        "text": "Given the circle at the right with designated center, designated perpendicular, and radius 5.  Find the length of the segment labeled x."
+    },
+    "30": {
+        "text": "In the diagram at the right, AC = DC = DB. If the measure of angle ACD is 48, find the measure of angle B."
+    },
+    "31": {
+        "text": "The diagram at the right shows a right triangle with representations for two angles.  What is the value of x?"
+    },
+    "32": {
+        "text": "In the accompanying diagram, BA = BC and x = 117. Find y."
+    },
+    "33": {
+        "text": "In the diagram at the right, the angles are represented as shown. Find the measure of angle DBC."
+    },
+    "34": {
+        "text": "In the accompanying diagram, line FG is parallel with line HI and line BC and line AD intersects at E, GBE = 3x + 20, and ECD = x. What is the value of x?"
+    },
+    "35": {
+        "text": "Points A, B, C, and D are midpoints of the sides of square JETS.  If the area of JETS is 36, what is the area of ABCD?"
+    },
+    "36": {
+        "text": "In the diagram at the right, parallel lines a and m are cut by transversal t, 1 = 4x + 16 and 2 = 2x - 22. Find 1."
+    },
+    "37": {
+        "text": "In the diagram at the right, lines a and m are parallel with transversal t.  What is the degree measure of x?"
+    },
+    "38": {
+        "text": "In the accompanying diagram of rectangle ABCD, the measure of angle ABE is 30 and the measure of angle CFE is 144. Find the measure of angle BEF."
+    },
+    "39": {
+        "text": "In the diagram at the right, lines a and m are parallel and are cut by transversal t.  Which two angles are not always congruent?"
+    },
+    "40": {
+        "text": "In the diagram at the right, line a is parallel to line b, and line t is a transversal. If 1 = 97 and 2 = 44, find 3."
+    },
+    "41": {
+        "text": "In the diagram at the right, lines f and g are parallel, and lines a and b are parallel. x = 75. What is the value of y + z?"
+    },
+    "42": {
+        "text": "In the diagram at the right, ABCD is a square, diagonal BD is extended through D to E, AD = DE, and line AE is drawn. What is the measure of angle DAE?"
+    },
+    "43": {
+        "text": "In the accompanying diagram of rhombus ABCD, the measure of angle CAB is 35. Find the measure of angle CDA."
+    },
+    "44": {
+        "text": "In the figure above, AD = 4, AB = 3 and CD = 9. What is the area of triangle AEC?"
+    },
+    "45": {
+        "text": "Which of the following could be a value of x, in the diagram above?"
+    },
+    "46": {
+        "text": "ABCD is a square with side 3, and E and F are the midpoints of sides AB and BC respectively. What is the area of the quadrilateral EBFD?"
+    },
+    "47": {
+        "text": "If the radius of the circle with centre O is 7 and the measure of angle AOB is 100, what is the the length of arc AB?"
+    },
+    "48": {
+        "text": "ABCD is a parallelogram. BD = 2. The angles of triangle BCD are all equal. What is the perimeter of the parallelogram?"
+    },
+    "49": {
+        "text": "In the figure above the square has two sides which are tangent to the circle. If the area of the circle is 4a^2*pi, what is the area of the square?"
+    },
+    "50": {
+        "text": "PQRS is a parallelogram and ST = TR. What is the ratio of the area of triangle QST to the area of the parallelogram?"
+    },
+    "51": {
+        "text": "Two equal circles are cut out of a rectangle of card of dimensions 16 by 8. The circles have the maximum diameter possible. What is the approximate area of the paper remaining after the circles have been cut out?"
+    },
+    "52": {
+        "text": "A and B are equidistant from the line l. How many circles can be drawn with their centers on line l and that pass through both A and B?"
+    },
+    "53": {
+        "text": "BD is a line segment and BAC = 1/4*ACB; ACD = ?"
+    },
+    "54": {
+        "text": "In triangle ABC, AD = DB , DE is parallel to BC, and the area of triangle ABC is 40. What is the area of triangle ADE ?"
+    },
+    "55": {
+        "text": "Rectangle ABCD has a perimeter of 26. The half circle with diameter AD has an area of 8*pi. What is the perimeter of the part of the figure that is not shaded?"
+    },
+    "56": {
+        "text": "AB and DE are parallel. The measure of angle BAC is 30 , and the measure of angle CDE is 50. What is the measure of angle ACD?"
+    },
+    "57": {
+        "text": "ASB is a quarter circle. PQRS is a rectangle with sides PQ and PS. PQ = 8 and PS = 6. What is the length of the arc AB?"
+    },
+    "58": {
+        "text": "In the diagram at the right, circle O has a radius of 5, and CE = 2. Diameter AC is perpendicular to chord BD at E. What is the length of BD?"
+    },
+    "59": {
+        "text": "What is the area of the following square, if the length of BD is 2*\\sqrt{2}?"
+    },
+    "60": {
+        "text": "In the figure below, what is the value of y?"
+    },
+    "61": {
+        "text": "The square ABCD touches the circle at 4 points. The length of the side of the square is 2. Find the area of the shaded region."
+    },
+    "62": {
+        "text": "In the figure above, if x < 90*\\degree then which of the following must be true?"
+    },
+    "63": {
+        "text": "In the figure above, line BE is perpendicular to line AD and line CF is perpendicular to line AD and AE = EF. What is the value of x?"
+    },
+    "64": {
+        "text": "In the figure above, if the measure of angle AOB is 40*\\degree and the length of arc AB is 4*\\pi, what is the area of the sector AOB?"
+    },
+    "65": {
+        "text": "If the measure of ABD=3*x-4, DBE=x-3, ABC=31, and EBC=2*x-10, then what is the value of x?"
+    }
+}
