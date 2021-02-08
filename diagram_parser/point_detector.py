@@ -1,6 +1,8 @@
 import cv2.cv2 as cv2
 import pytesseract
 import numpy as np
+import matplotlib.pyplot as plt
+from utils.tools import freedman_diaconis_bins
 
 pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
 
@@ -14,21 +16,20 @@ def preprocess(image):
 def get_connected_components(image):
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    threshold = cv2.bitwise_not(cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)[1])  # ensure binary
-    num_labels, labeled_image = cv2.connectedComponents(threshold)
-    return labeled_image
 
-def get_connected_component_points(labeled_image):
-    points_dict = dict()
-    for idx, label in np.ndenumerate(labeled_image):
-        if not (label == 0):
-            if label in points_dict:
-                points_dict[label].append(idx)
-            else:
-                points_dict[label] = [idx]
-    return points_dict
+    threshold = cv2.bitwise_not(cv2.threshold(gray, -1, 255, cv2.THRESH_OTSU)[1])  # ensure binary
 
+    num_labels, labeled_image, stats, centroids = cv2.connectedComponentsWithStats(threshold, connectivity=8)
 
+    return labeled_image, stats
+
+def get_component_roi(image, stats, index):
+    stat=stats[index]
+    x = stat[0]
+    y = stat[1]
+    w = stat[2]
+    h = stat[3]
+    return image[y:y+h, x:x+w]
 def imshow_components(labels):
     # Map component labels to hue val
     label_hue = np.uint8(179 * labels / np.max(labels))
@@ -45,17 +46,19 @@ def imshow_components(labels):
     cv2.waitKey()
 
 
-img = cv2.imread('../aaai/050.png')
+img = cv2.imread('../aaai/032.png')
 img=preprocess(img)
-labels = get_connected_components(img)
-np_points=np.array(get_connected_component_points(labels)[6])
-print(np_points)
-y, x, h, w = cv2.boundingRect(np_points)
-img_copy=img.copy()
-cv2.rectangle(img_copy, (x-1, y-1), (x+w+1, y+h+1), (0,255,0), 1)
-roi=img[y-1:y+h+1, x-1:x+w+1]
-thresholded_roi=cv2.threshold(roi, 200, 255, cv2.THRESH_BINARY)
-data = pytesseract.image_to_data(roi, lang='eng', config='--psm 10')
+labels, stats = get_connected_components(img)
+roi=get_component_roi(img, stats, 3)
+areas=stats[1:, 4]
+plt.hist(areas, bins=freedman_diaconis_bins(areas))
+plt.show()
+bordered_image=cv2.copyMakeBorder(roi, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=(255,255,255))
+resized_image=cv2.resize(bordered_image, (0, 0), fx=2, fy=2)
+data = pytesseract.image_to_data(resized_image, lang='eng', config='--psm 10 -c page_separator=""')
 print(data)
-cv2.imshow('img',img_copy)
+
+cv2.imshow('border', resized_image)
 cv2.waitKey()
+# cv2.imshow('img',img_copy)
+# cv2.waitKey()

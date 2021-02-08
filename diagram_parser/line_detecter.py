@@ -1,5 +1,6 @@
 import cv2.cv2 as cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class LineDetector:
@@ -20,12 +21,6 @@ class LineDetector:
     def filter_lines(self, lines, index):
         indices_to_remove = list()
         line = lines[index]
-        # for line2 in lines:
-        #     distances_list.append([abs(line2[0][0]-line[0][0]),abs(line2[0][1]-line[0][1])])
-        # print(distances_list)
-        #
-        # mean = np.mean(distances_list,axis=0)
-        # print(mean)
         angle_1 = self.inclination(alpha=line[0][1])
         for i in range(index + 1, lines.shape[0]):
             angle_2 = self.inclination(alpha=lines[i][0][1])
@@ -35,11 +30,9 @@ class LineDetector:
 
             if angle_between_lines < 0.1 and abs(abs(lines[i][0][0]) - abs(line[0][0])) < 20:
                 indices_to_remove.append(i)
-
         filtered_lines = np.delete(lines, indices_to_remove, axis=0)
         np.set_printoptions(suppress=True)
-        print(filtered_lines)
-        print(len(filtered_lines))
+
         if index + 1 == len(filtered_lines):
             return filtered_lines
         else:

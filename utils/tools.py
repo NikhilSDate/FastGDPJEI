@@ -6,3 +6,6 @@ def freedman_diaconis_bins(data):
     range=max(data)-min(data)
     num_bins= ceil(range/width)
     return num_bins
+def otsus_threshold(distribution):
+    pass
+
