@@ -2,7 +2,7 @@ import cv2.cv2 as cv2
 import pytesseract
 import numpy as np
 import matplotlib.pyplot as plt
-from utils.tools import freedman_diaconis_bins
+from utils.tools import freedman_diaconis_bins, otsus_threshold
 
 pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
 
@@ -46,13 +46,16 @@ def imshow_components(labels):
     cv2.waitKey()
 
 
-img = cv2.imread('../aaai/032.png')
+img = cv2.imread('../aaai/ncert.png')
 img=preprocess(img)
 labels, stats = get_connected_components(img)
-roi=get_component_roi(img, stats, 3)
+roi=get_component_roi(img, stats, 1)
 areas=stats[1:, 4]
+hist=np.histogram(areas, bins=freedman_diaconis_bins(areas))
+print(otsus_threshold(hist))
 plt.hist(areas, bins=freedman_diaconis_bins(areas))
 plt.show()
+
 bordered_image=cv2.copyMakeBorder(roi, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=(255,255,255))
 resized_image=cv2.resize(bordered_image, (0, 0), fx=2, fy=2)
 data = pytesseract.image_to_data(resized_image, lang='eng', config='--psm 10 -c page_separator=""')
