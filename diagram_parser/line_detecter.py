@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 
 class LineDetector:
 
-    def __init__(self, fp):
-        self.img = cv2.imread(fp)
+    def __init__(self, image):
+        self.img = image
+
 
     def preprocess(self):
         blur=cv2.bilateralFilter(self.img, 9, 75, 75)
@@ -62,15 +63,7 @@ class LineDetector:
     # plt.hist(distances_list,density=True,bins=30)
     # plt.show()
     def get_filtered_lines(self):
-        hough_lines = line_detector.get_hough_lines()
-        filtered_lines = line_detector.filter_lines(hough_lines, 0)
+        hough_lines = self.get_hough_lines()
+        filtered_lines = self.filter_lines(hough_lines, 0)
         return filtered_lines
 
-
-line_detector = LineDetector('../aaai/ncert2.png')
-line_detector.preprocess()
-filtered_lines = line_detector.get_filtered_lines()
-img = line_detector.draw_lines(filtered_lines)
-
-cv2.imshow('image', img)
-cv2.waitKey()

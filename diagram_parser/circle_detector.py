@@ -1,13 +1,15 @@
 import cv2.cv2 as cv2
 import numpy as np
+from diagram_parser.point_detector import remove_text
 
-img = cv2.imread('../aaai/006.png')
+img = cv2.imread('../aaai/000.png')
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-
-blur=cv2.bilateralFilter(gray,15,10,10)
-circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 1,
-                           param1=60, param2=40, minRadius=0, maxRadius=0)
+masked=remove_text(gray)
+cv2.imshow('masked', masked)
+cv2.waitKey()
+blur=cv2.medianBlur(masked,5)
+circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 0.1, 20,
+                           param1=50, param2=30, minRadius=0, maxRadius=0)
 circles = np.uint16(np.around(circles))
 # Draw the circles
 for i in circles[0, :]:
