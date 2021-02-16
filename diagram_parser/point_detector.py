@@ -3,7 +3,7 @@ import pytesseract
 import numpy as np
 import matplotlib.pyplot as plt
 from utils.tools import freedman_diaconis_bins, otsus_threshold
-from diagram_parser.line_detecter import LineDetector
+
 
 pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
 
@@ -22,11 +22,11 @@ def threshold_image(image):
 def get_connected_components(image):
     gray = image
 
-    threshold = cv2.bitwise_not(cv2.threshold(gray, -1, 255, cv2.THRESH_OTSU)[1])  # ensure binary
+    threshold = cv2.threshold(gray, -1, 255, cv2.THRESH_OTSU)[1] # ensure binary
 
-    num_labels, labeled_image, stats, centroids = cv2.connectedComponentsWithStats(threshold, connectivity=8)
 
-    return labeled_image, stats
+    return cv2.connectedComponentsWithStats(threshold, connectivity=8)
+
 
 
 def get_component_roi(image, stats, index):
@@ -75,7 +75,7 @@ def white_out_components_with_threshold(image, components, threshold):
 
 def remove_text(image):
     preprocessed = preprocess(image)
-    labels, stats = get_connected_components(image)
+    _, labels, stats, _ = get_connected_components(cv2.bitwise_not(image))
     areas = stats[1:, 4]
     hist = np.histogram(areas, bins=freedman_diaconis_bins(areas))
     threshold = otsus_threshold(hist)
@@ -84,8 +84,8 @@ def remove_text(image):
     blur=cv2.bilateralFilter(masked_image, 5, 75, 75)
     return blur
 
-img = cv2.imread('../aaai/058.png', 0)
-masked=remove_text(img)
+# img = cv2.imread('../aaai/058.png', 0)
+# masked=remove_text(img)
 
 
 # cv2.imshow('image', masked)
