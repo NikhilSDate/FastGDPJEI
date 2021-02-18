@@ -16,7 +16,6 @@ def otsus_threshold(dist):
     bins = dist[1]
     running_total = 0
     best_threshold = [bins[0], var(bins[0:-1], weights)]
-    print('best_threshold', best_threshold)
     num_bins = len(bins)
     datapoints = sum(weights)
     for i in range(1, num_bins):
@@ -25,7 +24,6 @@ def otsus_threshold(dist):
         # TODO:fix infinite variance for last step
         weighted_var = (running_total * var(bins[0:i], weights[0:i]) + (datapoints - running_total) * var(bins[i:-1],
                                                                                                          weights[i:]))/datapoints
-        print(bins[i], weighted_var)
         if weighted_var < best_threshold[1]:
             best_threshold[0] = bins[i]
             best_threshold[1] = weighted_var

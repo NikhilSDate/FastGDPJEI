@@ -25,7 +25,7 @@ def get_corners(image):
     uint8_filtered_dest = np.uint8(filtered_dest)
     _, components, _, centroids = get_connected_components(uint8_filtered_dest)
 
-    return centroids
+    return centroids[1:]
 
 
 def draw_corners(image, points):

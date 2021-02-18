@@ -46,17 +46,19 @@ def get_hough_lines(img):
 def draw_lines(img, lines):
     img_copy = img.copy()
     for line in lines:
-        for rho, theta in line:
-            a = np.cos(theta)
-            b = np.sin(theta)
-            x0 = a * rho
-            y0 = b * rho
-            x1 = int(x0 + 1000 * (-b))
-            y1 = int(y0 + 1000 * (a))
-            x2 = int(x0 - 1000 * (-b))
-            y2 = int(y0 - 1000 * (a))
+        print('line', line)
+        rho=line[0]
+        theta=line[1]
+        a = np.cos(theta)
+        b = np.sin(theta)
+        x0 = a * rho
+        y0 = b * rho
+        x1 = int(x0 + 1000 * (-b))
+        y1 = int(y0 + 1000 * (a))
+        x2 = int(x0 - 1000 * (-b))
+        y2 = int(y0 - 1000 * (a))
 
-            cv2.line(img_copy, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        cv2.line(img_copy, (x1, y1), (x2, y2), (0, 0, 255), 2)
     return img_copy
 
     # plt.hist(distances_list,density=True,bins=30)
@@ -64,5 +66,6 @@ def draw_lines(img, lines):
 def get_filtered_lines(img):
     hough_lines = get_hough_lines(img)
     filtered_lines = filter_lines(hough_lines, 0)
+    filtered_lines=[filtered_line[0] for filtered_line in filtered_lines] # remove double array
     return filtered_lines
 

@@ -68,7 +68,6 @@ def white_out_components_with_threshold(image, components, threshold):
         if label in rejected_labels:
             mask[idx] = 255
 
-    print('shape', image.shape, mask.shape)
     filtered_image = cv2.add(image, mask)
 
     return filtered_image
@@ -83,7 +82,23 @@ def remove_text(image):
     masked_image = white_out_components_with_threshold(image, (labels, stats), threshold)
     blur=cv2.bilateralFilter(masked_image, 5, 75, 75)
     return blur
-
+def get_text_component_centroids(image):
+    #TODO:CLEAN UP CODE
+    image=cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    text_centroids = []
+    text_areas = []
+    _, labels, stats, centroids = get_connected_components(cv2.bitwise_not(image))
+    areas = stats[1:, 4]
+    hist = np.histogram(areas, bins=freedman_diaconis_bins(areas))
+    threshold = otsus_threshold(hist)
+    for idx, stat in enumerate(stats):
+        if stat[4] < threshold:
+            text_centroids.append(centroids[idx])
+            text_areas.append(stat[4])
+    print('areas', text_areas)
+    return text_centroids
+# img=cv2.imread('../aaai/ncert2.png')
+# get_text_component_centroids(img)
 # img = cv2.imread('../aaai/058.png', 0)
 # masked=remove_text(img)
 
