@@ -63,7 +63,6 @@ def white_out_components_with_threshold(image, components, threshold):
     for idx, stat in enumerate(stats):
         if stat[4] < threshold:
             rejected_labels.append(idx)
-    print(rejected_labels)
     for idx, label in np.ndenumerate(labels):
         if label in rejected_labels:
             mask[idx] = 255
@@ -95,7 +94,6 @@ def get_text_component_centroids(image):
         if stat[4] < threshold:
             text_centroids.append(centroids[idx])
             text_areas.append(stat[4])
-    print('areas', text_areas)
     return text_centroids
 # img=cv2.imread('../aaai/ncert2.png')
 # get_text_component_centroids(img)
