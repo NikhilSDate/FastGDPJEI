@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from utils.tools import freedman_diaconis_bins, otsus_threshold
 
-
 pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
 
 
@@ -22,11 +21,9 @@ def threshold_image(image):
 def get_connected_components(image):
     gray = image
 
-    threshold = cv2.threshold(gray, -1, 255, cv2.THRESH_OTSU)[1] # ensure binary
-
+    threshold = cv2.threshold(gray, -1, 255, cv2.THRESH_OTSU)[1]  # ensure binary
 
     return cv2.connectedComponentsWithStats(threshold, connectivity=8)
-
 
 
 def get_component_roi(image, stats, index):
@@ -71,27 +68,28 @@ def white_out_components_with_threshold(image, components, threshold):
 
     return filtered_image
 
+
 def remove_text(image):
-    preprocessed = preprocess(image)
     _, labels, stats, _ = get_connected_components(cv2.bitwise_not(image))
     areas = stats[1:, 4]
-    hist = np.histogram(areas, bins=freedman_diaconis_bins(areas))
-    threshold = otsus_threshold(hist)
+
+    threshold = otsus_threshold(sorted(areas))
 
     masked_image = white_out_components_with_threshold(image, (labels, stats), threshold)
-    blur=cv2.bilateralFilter(masked_image, 5, 75, 75)
+    blur = cv2.bilateralFilter(masked_image, 5, 75, 75)
     return blur
+
+
 def get_text_component_centroids(image):
-    #TODO:CLEAN UP CODE
-    image=cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # TODO:CLEAN UP CODE
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     text_centroids = []
     text_areas = []
     _, labels, stats, centroids = get_connected_components(cv2.bitwise_not(image))
     areas = stats[1:, 4]
-    hist = np.histogram(areas, bins=freedman_diaconis_bins(areas))
-    threshold = otsus_threshold(hist)
+    threshold = otsus_threshold(sorted(areas))
     for idx, stat in enumerate(stats):
-        if stat[4] < threshold:
+        if 20 < stat[4] < threshold:
             text_centroids.append(centroids[idx])
             text_areas.append(stat[4])
     return text_centroids
@@ -107,7 +105,6 @@ def get_text_component_centroids(image):
 # lines=detector.get_filtered_lines()
 # cv2.imshow('border', detector.draw_lines(lines))
 # cv2.waitKey()
-
 
 
 # bordered_image = cv2.copyMakeBorder(roi, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=(255, 255, 255))

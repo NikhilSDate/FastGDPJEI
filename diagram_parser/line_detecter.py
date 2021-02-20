@@ -3,19 +3,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-
-
-
-
 def preprocess(img):
-        blur=cv2.bilateralFilter(img, 9, 75, 75)
-        return blur
+    blur = cv2.bilateralFilter(img, 9, 75, 75)
+    return blur
+
 
 def inclination(alpha):
-        if alpha > np.pi / 2:
-            return alpha - (np.pi / 2)
-        else:
-            return alpha + (np.pi / 2)
+    if alpha > np.pi / 2:
+        return alpha - (np.pi / 2)
+    else:
+        return alpha + (np.pi / 2)
+
 
 def filter_lines(lines, index):
     indices_to_remove = list()
@@ -33,22 +31,25 @@ def filter_lines(lines, index):
     np.set_printoptions(suppress=True)
 
     if index + 1 == len(filtered_lines):
-         return filtered_lines
+        return filtered_lines
     else:
         return filter_lines(filtered_lines, index + 1)
 
+
 def get_hough_lines(img):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    edges = cv2.Canny(gray, 50, 150, apertureSize=3)
-    lines = cv2.HoughLines(edges, 1, np.pi/45 , 40)
+    # TODO: fix mess of gray and colour images
+    #    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    edges = cv2.Canny(img, 50, 150, apertureSize=3)
+    lines = cv2.HoughLines(edges, 1, np.pi / 45, 40)
     return lines
+
 
 def draw_lines(img, lines):
     img_copy = img.copy()
     for line in lines:
         print('line', line)
-        rho=line[0]
-        theta=line[1]
+        rho = line[0]
+        theta = line[1]
         a = np.cos(theta)
         b = np.sin(theta)
         x0 = a * rho
@@ -63,9 +64,10 @@ def draw_lines(img, lines):
 
     # plt.hist(distances_list,density=True,bins=30)
     # plt.show()
+
+
 def get_filtered_lines(img):
     hough_lines = get_hough_lines(img)
     filtered_lines = filter_lines(hough_lines, 0)
-    filtered_lines=[filtered_line[0] for filtered_line in filtered_lines] # remove double array
+    filtered_lines = [filtered_line[0] for filtered_line in filtered_lines]  # remove double array
     return filtered_lines
-
