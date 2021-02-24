@@ -2,6 +2,8 @@ from scipy import stats
 from math import ceil
 from statsmodels.stats.weightstats import DescrStatsW
 import numpy as np
+from math import floor
+
 
 def freedman_diaconis_bins(data):
     iqr = stats.iqr(data)
@@ -9,6 +11,7 @@ def freedman_diaconis_bins(data):
     range = max(data) - min(data)
     num_bins = ceil(range / width)
     return num_bins
+
 
 # data must be sorted
 def otsus_threshold(data):
@@ -29,3 +32,11 @@ def otsus_threshold(data):
 
 def var(data, weights):
     return DescrStatsW(data, weights=weights, ddof=0).var
+
+
+def round_up_to_multiple(x, multiple):
+    return ceil(x / multiple) * multiple
+
+
+def round_down_to_multiple(x, multiple):
+    return floor(x / multiple) * multiple

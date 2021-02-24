@@ -38,7 +38,7 @@ def filter_lines(lines, index):
 
 def get_hough_lines(img):
     # TODO: fix mess of gray and colour images
-    #    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     edges = cv2.Canny(img, 50, 150, apertureSize=3)
     lines = cv2.HoughLines(edges, 1, np.pi / 45, 40)
     return lines
