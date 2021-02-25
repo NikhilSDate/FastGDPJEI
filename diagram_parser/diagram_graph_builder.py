@@ -123,7 +123,7 @@ def corner_intersection_text_distance(triple):
     return corner_to_intersection + intersection_to_text + text_to_corner
 
 
-image = cv2.imread('../aaai/058.png')
+image = cv2.imread('../aaai/ncert.png')
 
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 filtered = remove_text(gray)
