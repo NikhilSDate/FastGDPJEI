@@ -31,18 +31,20 @@ def merge(pairs, line_size=1000):
 
 
 pairs = dict()
+size = 0
 t = timeit.Timer(lambda: merge(pairs))
 x = []
 y= []
-# for i in range(0, 100):
-#     pairs=dict()
-#     for j in range(i, 0, -1):
-#         pairs[j] = random.randint(0, 10)
-#     x.append(i)
-#     y.append(t.timeit(number=100))
+for i in range(0, 300):
+    pairs=dict()
+    for j in range(i, 0, -1):
+        pairs[j] = random.randint(0, 50)
+    x.append(i)
+    y.append(t.timeit(number=75))
+    print(i)
 
-pairs = {0:1, 1:3, 4:102, 3:5, 7:100, 6:99, 2:500}
+pairs = {0:1, 1:3, 2:5, 3:7}
 print(merge(pairs))
-# plt.scatter(x, y)
-# plt.show()
+plt.scatter(x, y)
+plt.show()
 

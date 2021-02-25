@@ -6,6 +6,7 @@ import cv2.cv2 as cv2
 import numpy as np
 from math import sin, cos
 import itertools
+import networkx as nx
 
 
 def is_pair_consistent(pairs, pair):
@@ -43,7 +44,7 @@ def get_intersection(line1, line2):
         return None
 
 
-def get_all_intersections(lines, image_shape, merge_threshold = 5):
+def get_merged_intersections(lines, image_shape, merge_threshold = 5):
     intersections = dict()
     line_pairs = itertools.combinations(lines, 2)
     indices = itertools.combinations(range(len(lines)), 2)
@@ -53,33 +54,43 @@ def get_all_intersections(lines, image_shape, merge_threshold = 5):
             if (0 <= intersection_point[0] <= image_shape[1]) and (0 <= intersection_point[1] <= image_shape[0]):
                 intersections[idx] = intersection_point
     # merge similar intersections with a weird algorithm
-    merged_intersections = dict()
-    for intersection in intersections.items():
-        y = intersection[1][0]
-        x = intersection[1][1]
-        x_up = round_up_to_multiple(x, merge_threshold)
-        x_down = round_down_to_multiple(x, merge_threshold)
-        y_up = round_up_to_multiple(y, merge_threshold)
-        y_down = round_down_to_multiple(y, merge_threshold)
-        print(x_up, x_down, y_up, y_down)
-        combinations = ((y_up, x_up), (y_up, x_down), (y_down, x_up), (y_down, x_down))
-        merged = False
-        for combination in combinations:
-            if combination in merged_intersections:
-                merged_intersections[combination] = set(intersection[0]).union(set(merged_intersections[combination]))
-                merged = True
-        if not merged:
-            for combination in combinations:
-                print(combination)
-                merged_intersections[combination] = intersection[0]
-    merged_items = list(merged_intersections.items())
-    final_merged_items = dict()
-    # Iterate over batches of four items
-    for i in range(0, len(merged_items), 4):
-        item1, item2, item3, item4 = merged_items[i], merged_items[i+1], merged_items[i+2], merged_items[i+3]
-        union = set().union(item1[1], item2[1], item3[1], item4[1])
-        final_merged_items[item1[0]] = union
-    print(final_merged_items)
+    grid = []
+    for i in range(image_shape[0]):
+        row = [-1]*image_shape[1]
+        grid.append(row)
+    merged_items = dict()
+    connections = nx.Graph()
+    for pair in intersections.items():
+        print(pair)
+        connections.add_node(pair[0])
+        coord = pair[1]
+        x_range, y_range = (range(int(coord[0]-2), int(coord[0]+2)), range(int(coord[1]-2), int(coord[1]+2)))
+        overlapping_indices = set()
+        for y in y_range:
+            for x in x_range:
+                if not ((x < 0 or x >= image_shape[1]) or (y < 0 or y >= image_shape[0])):
+                    if grid[y][x] != -1:
+                        print(grid[y][x])
+                        overlapping_indices.add(grid[y][x])
+
+                    grid[y][x] = pair[0]
+
+        for index in overlapping_indices:
+            connections.add_edge(pair[0], index)
+    components = nx.connected_components(connections)
+    for component in components:
+        values = []
+        for node in component:
+            values.append(intersections[node])
+        merged_items[tuple(component)] = values
+    final_merged_items=dict()
+    for item in merged_items.items():
+        intersecting_lines=set()
+        for line_pair in item[0]:
+            intersecting_lines.add(line_pair[0])
+            intersecting_lines.add(line_pair[1])
+        print(item[1][0])
+        final_merged_items[tuple(item[1][0])] = tuple(intersecting_lines)
     return final_merged_items
 
 
@@ -123,7 +134,7 @@ def corner_intersection_text_distance(triple):
     return corner_to_intersection + intersection_to_text + text_to_corner
 
 
-image = cv2.imread('../aaai/ncert.png')
+image = cv2.imread('../aaai/007.png')
 
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 filtered = remove_text(gray)
@@ -131,7 +142,8 @@ lines = get_filtered_lines(filtered)
 image_with_lines = draw_lines(image, lines)
 cv2.imshow('lines', image_with_lines)
 cv2.waitKey()
-intersections = get_all_intersections(lines, image.shape)
+intersections = get_merged_intersections(lines, image.shape)
+print(intersections)
 corners = get_corners(image)
 image_with_corners = draw_corners(image, corners)
 # cv2.imshow('corners', image_with_corners)
