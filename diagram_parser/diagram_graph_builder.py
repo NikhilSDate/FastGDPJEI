@@ -61,7 +61,6 @@ def get_merged_intersections(lines, image_shape, merge_threshold = 5):
     merged_items = dict()
     connections = nx.Graph()
     for pair in intersections.items():
-        print(pair)
         connections.add_node(pair[0])
         coord = pair[1]
         x_range, y_range = (range(int(coord[0]-2), int(coord[0]+2)), range(int(coord[1]-2), int(coord[1]+2)))
@@ -70,7 +69,6 @@ def get_merged_intersections(lines, image_shape, merge_threshold = 5):
             for x in x_range:
                 if not ((x < 0 or x >= image_shape[1]) or (y < 0 or y >= image_shape[0])):
                     if grid[y][x] != -1:
-                        print(grid[y][x])
                         overlapping_indices.add(grid[y][x])
 
                     grid[y][x] = pair[0]
@@ -89,15 +87,17 @@ def get_merged_intersections(lines, image_shape, merge_threshold = 5):
         for line_pair in item[0]:
             intersecting_lines.add(line_pair[0])
             intersecting_lines.add(line_pair[1])
-        print(item[1][0])
         final_merged_items[tuple(item[1][0])] = tuple(intersecting_lines)
     return final_merged_items
 
 
-def get_strong_pairs(corners, intersections):
-    entry_list = list(intersections.items())
-    product = itertools.product(corners, entry_list)
-    sorted_products = sorted(product, key=corner_intersection_distance)
+def get_strong_pairs(set1, set2, comparator):
+    if isinstance(set2, dict):
+        entry_list = list(set2.items())
+    else:
+        entry_list = set2
+    product = itertools.product(set1, entry_list)
+    sorted_products = sorted(product, key=comparator)
     accepted_pairs = []
     while sorted_products:
         pair = sorted_products.pop(0)
@@ -114,14 +114,24 @@ def get_strong_triples(strong_pairs, text_coords):
         triple = sorted_triples.pop(0)
         if is_triple_consistent(accepted_triples, triple):
             accepted_triples.append(triple)
+    flattened_triples = list()
+    for item in accepted_triples:
+        corner_coords = item[0][0]
+        int_coords = item[0][1]
+        centroid = item[1]
+        flattened_triples.append((corner_coords, int_coords, centroid))
+    return flattened_triples
 
-    return accepted_triples
 
-
-def corner_intersection_distance(corner_intersection_pair):
+def coord_intersection_distance(corner_intersection_pair):
     corner_coords = corner_intersection_pair[0]
     intersection_coords = corner_intersection_pair[1][0]
-    return np.linalg.norm(corner_coords - intersection_coords)
+    return np.linalg.norm(np.subtract(corner_coords,  intersection_coords))
+def coord_pair_distance(coord_pair):
+    corner_coords = coord_pair[0]
+    centroid_coords = coord_pair[1]
+    return np.linalg.norm(np.subtract(corner_coords,  centroid_coords))
+
 
 
 def corner_intersection_text_distance(triple):
@@ -132,33 +142,57 @@ def corner_intersection_text_distance(triple):
     intersection_to_text = np.linalg.norm(text_centroid - intersection_coords)
     text_to_corner = np.linalg.norm(corner_coords - text_centroid)
     return corner_to_intersection + intersection_to_text + text_to_corner
+def get_weak_structures(corners, intersections, centroids, strong_items):
+    weak_corners_set = set([tuple(corner) for corner in corners])
+    weak_ints_set = set(intersections.items())
+    weak_centroids_set = set([tuple(centroid) for centroid in centroids])
+    for item in strong_items:
+        weak_corners_set.remove(tuple(item[0]))
+        weak_ints_set.remove(item[1])
+        weak_centroids_set.remove(tuple(item[2]))
+    weak_corners_list = [np.array(weak_corner) for weak_corner in weak_corners_set]
+    weak_centroids_list = [np.array(weak_centroid) for weak_centroid in weak_centroids_set]
 
-
-image = cv2.imread('../aaai/007.png')
+    return weak_corners_list, weak_ints_set, weak_centroids_list
+image = cv2.imread('../aaai/009.png')
+corner_int_img = image.copy()
 
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 filtered = remove_text(gray)
 lines = get_filtered_lines(filtered)
 image_with_lines = draw_lines(image, lines)
-cv2.imshow('lines', image_with_lines)
-cv2.waitKey()
+# cv2.imshow('lines', image_with_lines)
+# cv2.waitKey()
 intersections = get_merged_intersections(lines, image.shape)
-print(intersections)
 corners = get_corners(image)
 image_with_corners = draw_corners(image, corners)
-# cv2.imshow('corners', image_with_corners)
-# cv2.waitKey()
+cv2.imshow('corners', image_with_corners)
+cv2.waitKey()
 text_centroids = get_text_component_centroids(image)
-strong_pairs = get_strong_pairs(corners, intersections)
+strong_pairs = get_strong_pairs(corners, intersections, comparator=coord_intersection_distance)
 strong_triples = get_strong_triples(strong_pairs, text_centroids)
+weak_corners, weak_intersections, weak_centroids = get_weak_structures(corners, intersections, text_centroids, strong_triples)
+corner_int = get_strong_pairs(weak_corners, weak_intersections, comparator=coord_intersection_distance)
+corner_cent = get_strong_pairs(weak_corners, weak_centroids, comparator=coord_pair_distance)
+cent_int = get_strong_pairs(weak_centroids, weak_intersections, comparator = coord_intersection_distance)
+print(corner_int, corner_cent, cent_int)
 for strong_triple in strong_triples:
-    cornerX, cornerY = int(strong_triple[0][0][0]), int(strong_triple[0][0][1])
-    intX, intY = int(strong_triple[0][1][0][0]), int(strong_triple[0][1][0][1])
-    textX, textY = int(strong_triple[1][0]), int(strong_triple[1][1])
+    cornerX, cornerY = int(strong_triple[0][0]), int(strong_triple[0][1])
+    intX, intY = int(strong_triple[1][0][0]), int(strong_triple[1][0][1])
+    textX, textY = int(strong_triple[2][0]), int(strong_triple[2][1])
     cv2.circle(image, (cornerX, cornerY), 2, [255, 0, 0], -1)
     cv2.circle(image, (intX, intY), 2, [0, 255, 0], -1)
     cv2.circle(image, (textX, textY), 2, [0, 0, 255], -1)
+for pair in corner_cent:
+    cornerX, cornerY = int(pair[0][0]), int(pair[0][1])
+    intX, intY = int(pair[1][0]), int(pair[1][1])
+    cv2.circle(corner_int_img, (cornerX, cornerY), 2, [255, 0, 0], -1)
+    cv2.circle(corner_int_img, (intX, intY), 2, [0, 255, 0], -1)
+
+
 cv2.imshow('triples', image)
+cv2.waitKey()
+cv2.imshow('corners and intersections', corner_int_img)
 cv2.waitKey()
 # image_with_intersections = image.copy()
 # image_with_corners = draw_corners(image, corners)

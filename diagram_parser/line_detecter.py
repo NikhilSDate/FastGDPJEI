@@ -47,7 +47,6 @@ def get_hough_lines(img):
 def draw_lines(img, lines):
     img_copy = img.copy()
     for line in lines:
-        print('line', line)
         rho = line[0]
         theta = line[1]
         a = np.cos(theta)
