@@ -1,6 +1,6 @@
 import cv2.cv2 as cv2
 import numpy as np
-from diagram_parser.point_detector import remove_text
+from diagram_parser.text_detector import remove_text
 
 img = cv2.imread('../aaai/000.png')
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)

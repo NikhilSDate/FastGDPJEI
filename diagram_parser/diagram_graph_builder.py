@@ -1,7 +1,6 @@
 from diagram_parser.line_detecter import get_filtered_lines, draw_lines
 from diagram_parser.corner_detector import get_corners, draw_corners
-from diagram_parser.point_detector import get_text_component_centroids, remove_text
-from utils.tools import round_up_to_multiple, round_down_to_multiple
+from diagram_parser.text_detector import text_components_with_centroids, remove_text
 import cv2.cv2 as cv2
 import numpy as np
 from math import sin, cos
@@ -40,11 +39,11 @@ def get_intersection(line1, line2):
         x = np.linalg.solve(coefficients, constants)
         return x
     except np.linalg.LinAlgError:
-        # Exception is thrown if lines are parallel (no intersection point)
+        # Exception is thrown if lines are parallel
         return None
 
 
-def get_merged_intersections(lines, image_shape, merge_threshold = 5):
+def get_merged_intersections(lines, image_shape):
     intersections = dict()
     line_pairs = itertools.combinations(lines, 2)
     indices = itertools.combinations(range(len(lines)), 2)
@@ -113,6 +112,7 @@ def get_strong_triples(strong_pairs, text_coords):
     while sorted_triples:
         triple = sorted_triples.pop(0)
         if is_triple_consistent(accepted_triples, triple):
+            print()
             accepted_triples.append(triple)
     flattened_triples = list()
     for item in accepted_triples:
@@ -154,28 +154,29 @@ def get_weak_structures(corners, intersections, centroids, strong_items):
     weak_centroids_list = [np.array(weak_centroid) for weak_centroid in weak_centroids_set]
 
     return weak_corners_list, weak_ints_set, weak_centroids_list
-image = cv2.imread('../aaai/009.png')
+image = cv2.imread('../aaai/ncert.png')
+print(image.shape)
 corner_int_img = image.copy()
 
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 filtered = remove_text(gray)
+cv2.imshow('filtered', filtered)
 lines = get_filtered_lines(filtered)
 image_with_lines = draw_lines(image, lines)
-# cv2.imshow('lines', image_with_lines)
-# cv2.waitKey()
+cv2.imshow('lines', image_with_lines)
+cv2.waitKey()
 intersections = get_merged_intersections(lines, image.shape)
 corners = get_corners(image)
 image_with_corners = draw_corners(image, corners)
 cv2.imshow('corners', image_with_corners)
 cv2.waitKey()
-text_centroids = get_text_component_centroids(image)
+text_centroids, _ = text_components_with_centroids(image)
 strong_pairs = get_strong_pairs(corners, intersections, comparator=coord_intersection_distance)
 strong_triples = get_strong_triples(strong_pairs, text_centroids)
 weak_corners, weak_intersections, weak_centroids = get_weak_structures(corners, intersections, text_centroids, strong_triples)
 corner_int = get_strong_pairs(weak_corners, weak_intersections, comparator=coord_intersection_distance)
 corner_cent = get_strong_pairs(weak_corners, weak_centroids, comparator=coord_pair_distance)
 cent_int = get_strong_pairs(weak_centroids, weak_intersections, comparator = coord_intersection_distance)
-print(corner_int, corner_cent, cent_int)
 for strong_triple in strong_triples:
     cornerX, cornerY = int(strong_triple[0][0]), int(strong_triple[0][1])
     intX, intY = int(strong_triple[1][0][0]), int(strong_triple[1][0][1])

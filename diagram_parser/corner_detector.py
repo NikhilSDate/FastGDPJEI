@@ -7,8 +7,8 @@ import cv2.cv2 as cv2
 import numpy as np
 from utils.tools import freedman_diaconis_bins, otsus_threshold
 import matplotlib.pyplot as plt
-from diagram_parser.point_detector import remove_text
-from diagram_parser.point_detector import get_connected_components, imshow_components
+from diagram_parser.text_detector import remove_text
+from diagram_parser.text_detector import connected_components_and_threshold, imshow_components
 
 
 def distance(x1, y1, x2, y2):
@@ -23,7 +23,7 @@ def get_corners(image):
     filtered_dest = np.zeros_like(dilated_corners)
     filtered_dest[dilated_corners > 0.04 * dilated_corners.max()] = 255
     uint8_filtered_dest = np.uint8(filtered_dest)
-    _, components, _, centroids = get_connected_components(uint8_filtered_dest)
+    (_, components, _, centroids), _ = connected_components_and_threshold(uint8_filtered_dest)
 
     return centroids[1:]
 
