@@ -24,7 +24,8 @@ def filter_lines(lines, index):
         angle_between_lines = abs(angle_2 - angle_1)
         if angle_between_lines > np.pi / 2:
             angle_between_lines = np.pi - angle_between_lines
-
+        # remove lines for which the angle is less than ~5 degrees and the difference between the rhos is less than
+        # 20 pixels
         if angle_between_lines < 0.1 and abs(abs(lines[i][0][0]) - abs(line[0][0])) < 20:
             indices_to_remove.append(i)
     filtered_lines = np.delete(lines, indices_to_remove, axis=0)
