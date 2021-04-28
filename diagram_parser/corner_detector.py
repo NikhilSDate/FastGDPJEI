@@ -18,6 +18,7 @@ def distance(x1, y1, x2, y2):
 def get_corners(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     masked = remove_text(gray)
+
     corners = cv2.cornerHarris(masked, 2, 3, 0.04)
     dilated_corners = cv2.dilate(corners, None)
     filtered_dest = np.zeros_like(dilated_corners)
