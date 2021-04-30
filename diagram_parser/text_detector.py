@@ -74,11 +74,13 @@ def white_out_components_with_threshold(image, components, threshold):
 
 
 def remove_text(image):
+    # TODO: fixed intermediate blurring
+
     # does not convert image to grayscale
     (_, labels, stats, _), area_threshold = connected_components_and_threshold(cv2.bitwise_not(image))
     masked_image = white_out_components_with_threshold(image, (labels, stats), area_threshold)
-    blur = cv2.bilateralFilter(masked_image, 5, 75, 75)
-    return blur
+    #    blur = cv2.bilateralFilter(masked_image, 5, 75, 75)
+    return masked_image
 
 
 def text_components_with_centroids(image):
@@ -105,7 +107,6 @@ def resize_region(region, ):
              hierarchy[0][i][2] == -1 and hierarchy[0][i][3] != -1]
     inverted = cv2.cvtColor(cv2.bitwise_not(bordered), cv2.COLOR_GRAY2BGR)
     cv2.drawContours(inverted, contours, 1, thickness=1, color=[255, 0, 0])
-
 
 # img = cv2.imread('../aaai/ncert2.png')
 # text_regions = text_components_with_centroids(img)
