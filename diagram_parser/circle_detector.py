@@ -30,10 +30,10 @@ def get_best_params(image, objective_function):
     circle_counts = []
     max_circles = 0
     for param2 in range(1, 100, 2):
-        for min_radius in range(0, int(image.shape[0] / 2), 2):
+        for min_radius in range(0, int((image.shape[0] + image.shape[1])/ 4), 2):
             circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT, 1.5, 1,
                                        param1=50, param2=param2, minRadius=min_radius,
-                                       maxRadius=int(image.shape[0] / 2))
+                                       maxRadius=int((image.shape[0] + image.shape[1])/ 4))
             if circles is not None:
                 num_circles = circles.shape[1]
 
@@ -50,7 +50,7 @@ def get_best_params(image, objective_function):
                 x.append(param2)
                 y.append(min_radius)
                 circle_counts.append(0)
-    comparator = lambda trial: objective_function(*trial, 100, int(image.shape[0] / 2), max_circles)
+    comparator = lambda trial: objective_function(*trial, 100, int((image.shape[0] + image.shape[1])/ 4), max_circles)
     sorted_results = sorted(trial_results, key=comparator)
     params = sorted_results[-1]
     return params
@@ -79,16 +79,15 @@ def objective_function(param2, min_radius, num_circles, max_param_2, max_radius,
         min_radius_term = math.exp((-(min_radius / max_radius) ** 2))
         min_radius_term = 1 - (1.25 * (min_radius / max_radius - 0.2) ** 2)
         num_circles_term = 1 - math.exp(-5*math.pow(num_circles/max_circles, 1/4))
-        return param2_term + min_radius_term
+        return param2_term + 0.5*min_radius_term
 
 
 def show_circles(image, circles):
-    color = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     for i in circles[0, :]:
-        cv2.circle(color, (i[0], i[1]), i[2], (0, 255, 0), 2)
+        cv2.circle(image, (i[0], i[1]), i[2], (0, 255, 0), 2)
         # draw the center of the circle
-        cv2.circle(color, (i[0], i[1]), 2, (0, 0, 255), 3)
-    cv2.imshow('detected circles', color)
+        cv2.circle(image, (i[0], i[1]), 2, (0, 0, 255), 3)
+    cv2.imshow('detected circles', image)
     cv2.waitKey()
 
 
@@ -113,22 +112,22 @@ def detect_circles(image):
     image = preprocess(image)
     best_params = get_best_params(image, objective_function=objective_function)
     # TODO: MAYBE USE A MORE SOPHISTICATED WAY OF DETERMINING IF THE IMAGE CONTAINS CIRCLES
-    if best_params[0] > 10:
+    if best_params[0] > 60:
 
         best_circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT,
                                         1.5, 1, param1=50, param2=best_params[0],
-                                        minRadius=best_params[1], maxRadius=int(image.shape[0] / 2))
-        best_circles = best_circles.astype(np.uint8)
+                                        minRadius=best_params[1], maxRadius=int((image.shape[0] + image.shape[1])/ 4))
         filtered_circles = clustering_filter(best_circles)
         print(best_params)
-        cv2.imshow('preprocessed', image)
-        show_circles(image, filtered_circles.astype(np.uint16))
+        return filtered_circles
     else:
-        return []
+        return None
 
 
-img = cv2.imread('circles.png')
-detect_circles(img)
+img = cv2.imread('test_images/circle.png')
+circles = detect_circles(img)
+if circles is not None:
+    show_circles(img, circles.astype(np.uint16))
 
 
 # ax = fig.gca(projection='3d')
