@@ -13,12 +13,10 @@ def resize(image, final_larger_dim, interpolation=cv2.INTER_LINEAR):
 
 
 def preprocess(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    #    gray = resize(gray, 200)
-    masked = remove_text(gray)
+    # TODO:RESIZE IMAGE TO IDEAL SIZE
     # foreground is black so erode instead of dilating
     kernel = np.ones((2, 2), np.uint8)
-    eroded = cv2.erode(masked, kernel, iterations=1)
+    eroded = cv2.erode(image, kernel, iterations=1)
     blur = cv2.GaussianBlur(eroded, (3, 3), 1.5)
     return blur
 
@@ -91,9 +89,9 @@ def show_circles(image, circles):
     cv2.waitKey()
 
 
-def clustering_filter(circles):
+def clustering_filter(circles, image_size):
     circle_centers = [(circle[0], circle[1]) for circle in circles[0]]
-    clustering = DBSCAN(eps=0.05 * (img.shape[0] + img.shape[1]), min_samples=1).fit(circle_centers)
+    clustering = DBSCAN(eps=0.05 * (image_size[0] + image_size[1]), min_samples=1).fit(circle_centers)
     clusters = dict()
     filtered_circles = []
     for idx, label in enumerate(clustering.labels_):
@@ -105,7 +103,7 @@ def clustering_filter(circles):
         average_circle = np.mean(clusters[key], axis=0)
         filtered_circles.append(average_circle)
 
-    return np.array([filtered_circles])
+    return np.array(filtered_circles)
 
 
 def detect_circles(image):
@@ -117,17 +115,15 @@ def detect_circles(image):
         best_circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT,
                                         1.5, 1, param1=50, param2=best_params[0],
                                         minRadius=best_params[1], maxRadius=int((image.shape[0] + image.shape[1])/ 4))
-        filtered_circles = clustering_filter(best_circles)
-        print(best_params)
+        filtered_circles = clustering_filter(best_circles, image.shape)
         return filtered_circles
     else:
-        return None
+        np.array([])
 
-
-img = cv2.imread('test_images/circle.png')
-circles = detect_circles(img)
-if circles is not None:
-    show_circles(img, circles.astype(np.uint16))
+# img = cv2.imread('test_images/circle.png')
+# circles = detect_circles(img)
+# if circles is not None:
+#     show_circles(img, circles.astype(np.uint16))
 
 
 # ax = fig.gca(projection='3d')

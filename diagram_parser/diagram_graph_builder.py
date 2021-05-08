@@ -1,6 +1,7 @@
 from diagram_parser.line_detecter import get_filtered_lines, draw_lines
 from diagram_parser.corner_detector import get_corners, draw_corners
 from diagram_parser.text_detector import text_components_with_centroids, remove_text
+from diagram_parser.circle_detector import detect_circles
 import cv2.cv2 as cv2
 import numpy as np
 from math import sin, cos, sqrt
@@ -15,6 +16,8 @@ from diagram_parser.diagram_interpretation import Interpretation
 from diagram_parser.point import Point
 from queue import Queue
 from sklearn.cluster import AgglomerativeClustering, DBSCAN
+import sympy as sp
+
 
 def is_pair_consistent(pairs, pair):
     consistent = True
@@ -37,19 +40,59 @@ def is_triple_consistent(triples, triple):
     return consistent
 
 
-def get_intersection(line1, line2):
-    rho1 = line1[0]
-    theta1 = line1[1]
-    rho2 = line2[0]
-    theta2 = line2[1]
-    coefficients = np.array([[cos(theta1), sin(theta1)], [cos(theta2), sin(theta2)]])
-    constants = np.array([rho1, rho2])
-    try:
-        x = np.linalg.solve(coefficients, constants)
-        return x
-    except np.linalg.LinAlgError:
-        # Exception is thrown if lines are parallel
-        return None
+def calculate_intersection(structure1, structure2):
+    print(structure1.shape[0], structure2.shape[0])
+    if (structure1.shape[0] == 3) and (structure2.shape[0] == 2):
+        rho = structure2[0]
+        theta = structure2[1]
+        A = cos(theta)
+        B = sin(theta)
+        C = -rho
+        x0 = structure1[0]
+        y0 = structure1[1]
+        r = structure1[2]
+
+        x = sp.Symbol('x')
+        y = sp.Symbol('y')
+
+        circle_eq = sp.Eq((x - x0) ** 2 + (y - y0) ** 2, r ** 2)
+        line_eq = sp.Eq(A * x + B * y + C, 0)
+
+        solutions = sp.solve([circle_eq, line_eq], (x, y))
+    elif (structure1.shape[0] == 2) and (structure2.shape[0] == 3):
+        rho = structure1[0]
+        theta = structure1[1]
+        A = cos(theta)
+        B = sin(theta)
+        C = -rho
+        x0 = structure2[0]
+        y0 = structure2[1]
+        r = structure2[2]
+
+        x = sp.Symbol('x')
+        y = sp.Symbol('y')
+
+        circle_eq = sp.Eq((x - x0) ** 2 + (y - y0) ** 2, r ** 2)
+        line_eq = sp.Eq(A * x + B * y + C, 0)
+
+        solutions = sp.solve([circle_eq, line_eq], (x, y))
+    elif (structure1.shape[0] == 3) and (structure2.shape[0] == 3):
+        pass
+    else:
+        rho1 = structure1[0]
+        theta1 = structure1[1]
+        rho2 = structure2[0]
+        theta2 = structure2[1]
+        coefficients = np.array([[cos(theta1), sin(theta1)], [cos(theta2), sin(theta2)]])
+        constants = np.array([rho1, rho2])
+        try:
+            x = np.linalg.solve(coefficients, constants)
+            return x
+        except np.linalg.LinAlgError:
+            # Exception is thrown if lines are parallel
+            return None
+
+
 def point_to_line_distance(point_coordinates, line):
     # line is in Hesse normal form
     # first converts line to Ax + By + C = 0
@@ -60,21 +103,26 @@ def point_to_line_distance(point_coordinates, line):
     C = -rho
     x = point_coordinates[0]
     y = point_coordinates[1]
-    distance = abs(A*x + B*y + C)/sqrt(A**2+B**2)
+    distance = abs(A * x + B * y + C) / sqrt(A ** 2 + B ** 2)
     return distance
 
 
-
-def get_merged_intersections(lines, image_shape):
+def get_merged_intersections(lines, circles, image_shape):
     intersections = dict()
-    line_pairs = itertools.combinations(lines, 2)
-    indices = itertools.combinations(range(len(lines)), 2)
-    for idx, pair in zip(indices, line_pairs):
-        intersection_point = get_intersection(pair[0], pair[1])
+    structures = lines + list(circles)
+    structure_pairs = itertools.combinations(structures, 2)
+    structure_ids = []
+    for i in range(len(lines)):
+        structure_ids.append(f'l{i}')
+    for i in range(len(circles)):
+        structure_ids.append(f'c{i}')
+    indices = itertools.combinations(structure_ids, 2)
+    for idx, pair in zip(indices, structure_pairs):
+        intersection_point = calculate_intersection(pair[0], pair[1])
         if intersection_point is not None:
             if (0 <= intersection_point[0] <= image_shape[1]) and (0 <= intersection_point[1] <= image_shape[0]):
                 intersections[idx] = intersection_point
-    # merge similar intersections with a weird algorithm
+    # merge similar intersections
     grid = []
     for i in range(image_shape[0]):
         row = [-1] * image_shape[1]
@@ -185,20 +233,21 @@ def get_primitives(image):
     filtered = remove_text(gray)
 
     lines = get_filtered_lines(filtered)
+    circles = detect_circles(filtered)
+    print(lines, circles)
     image_with_lines = draw_lines(image, lines)
-    intersections = get_merged_intersections(lines, image.shape)
+    intersections = get_merged_intersections(lines, circles, image.shape)
     corners = get_corners(image)
     image_with_corners = draw_corners(image, corners)
     text_regions = text_components_with_centroids(image)
     return corners, lines, intersections, text_regions
 
 
-image = cv2.imread('../aaai/015.png')
+image = cv2.imread('../aaai/000.png')
 corner_int_img = image.copy()
 
 corners, lines, intersections, text_regions = get_primitives(image)
 primitives = list()
-print(lines)
 for idx, corner in enumerate(corners):
     primitives.append(Primitive((corner[0], corner[1]), 'c', idx))
 for idx, intersection in enumerate(intersections.keys()):
@@ -206,16 +255,19 @@ for idx, intersection in enumerate(intersections.keys()):
 for idx, coords in enumerate(text_regions.keys()):
     primitives.append(Primitive(coords, 't', idx))
 
+
 def average_distance(point, points):
     distance = 0
     for point2 in points:
-        if np.linalg.norm(np.subtract(point, point2))<40:
-            distance = distance +1
+        if np.linalg.norm(np.subtract(point, point2)) < 40:
+            distance = distance + 1
     return distance
+
+
 def search_for_solution(primitives, corners, lines, intersections, text_regions):
     primitive_list = [primitive.coords for primitive in primitives]
     clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.2 * image.shape[0]).fit(primitive_list)
-    clustering = DBSCAN(eps=0.1*image.shape[0], min_samples=1).fit(primitive_list)
+    clustering = DBSCAN(eps=0.1 * image.shape[0], min_samples=1).fit(primitive_list)
     cluster_list = []
     num_clusters = max(clustering.labels_) + 1
     for _ in range(num_clusters):
@@ -262,9 +314,8 @@ def search_for_solution(primitives, corners, lines, intersections, text_regions)
                     point.add_label(character)
                 point.add_label()
                 for line in line_set:
-                    point.add_property('lieson', line)
+                    point.add_property('lieson', f'l{line}')
                 diagram_interpretation.add_point(point)
-
 
     print(diagram_interpretation)
     ordered_points = sorted(primitives, key=lambda primitive: average_distance(primitive.coords, primitive_list))
@@ -305,28 +356,9 @@ def search_for_solution(primitives, corners, lines, intersections, text_regions)
     #         cv2.circle(image, (int(coord[0]), int(coord[1])), 2, rgb.tolist(), -1)
     # cv2.imshow('test', image)
     # cv2.waitKey()
+
+
 search_for_solution(primitives, corners, lines, intersections, text_regions)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # text_centroids = text_regions.keys()
 # strong_pairs = get_strong_pairs(corners, intersections, comparator=coord_intersection_distance)
