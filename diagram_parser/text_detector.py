@@ -1,10 +1,7 @@
 import cv2.cv2 as cv2
 import numpy as np
-
-from utils.vector import draw_vector_contours
 from utils.tools import freedman_diaconis_bins, otsus_threshold
-from tensorflow.keras import models
-from tensorflow.keras.preprocessing import image
+from numpy import cos, sin
 
 
 def preprocess(image):
@@ -27,7 +24,7 @@ def connected_components_and_threshold(image):
     stats = components[2]
     small_areas = stats[1:, 4]
     area_threshold = otsus_threshold(sorted(small_areas))
-    return components, area_threshold
+    return components, area_threshold, threshold
 
 
 def get_component_roi(image, stats, index):
@@ -77,7 +74,7 @@ def remove_text(image):
     # TODO: fixed intermediate blurring
 
     # does not convert image to grayscale
-    (_, labels, stats, _), area_threshold = connected_components_and_threshold(cv2.bitwise_not(image))
+    (_, labels, stats, _), area_threshold, _ = connected_components_and_threshold(cv2.bitwise_not(image))
     masked_image = white_out_components_with_threshold(image, (labels, stats), area_threshold)
     #    blur = cv2.bilateralFilter(masked_image, 5, 75, 75)
     return masked_image
@@ -87,11 +84,75 @@ def text_components_with_centroids(image):
     # TODO:KEEP TRACK OF INDICES INSTEAD OF USING A DICTIONARY
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     text_regions = dict()
-    (_, labels, stats, centroids), area_threshold = connected_components_and_threshold(cv2.bitwise_not(image))
+    (_, labels, stats, centroids), area_threshold, thresholded = connected_components_and_threshold(
+        cv2.bitwise_not(image))
+    bounding_rects = list()
     for idx, stat in enumerate(stats):
-        if 20 < stat[4] < area_threshold:
-            text_regions[tuple(centroids[idx])] = get_component_roi(image, stats, idx)
+
+        if stat[4] < area_threshold:
+            points = []
+            for y in range(stat[1], stat[1] + stat[3]):
+                for x in range(stat[0], stat[0] + stat[2]):
+                    if thresholded[y][x] == 255:
+                        points.append((x, y))
+            points = np.array(points, dtype=np.float32)
+            rect = cv2.boundingRect(points)
+            bounding_rects.append((idx, rect))
+
+    bounding_rects = sorted(bounding_rects, key=lambda rect: rect[1][0])
+    used_rects = list()
+    for i in range(len(bounding_rects)):
+        used_rects.append(False)
+    accepted_boxes = list()
+    for i1, rect1 in enumerate(bounding_rects):
+        if not used_rects[i1]:
+            indices = [rect1[0]]
+            currentx1 = rect1[1][0]
+            currenty1 = rect1[1][1]
+            currentx2 = currentx1 + rect1[1][2]
+            currenty2 = currenty1 + rect1[1][3]
+            used_rects[i1] = True
+            for i2, rect2 in enumerate(bounding_rects[i1 + 1:], start=i1 + 1):
+                nextx1 = rect2[1][0]
+                nexty1 = rect2[1][1]
+                nextx2 = nextx1 + rect2[1][2]
+                nexty2 = nexty1 + rect2[1][3]
+
+                boundx1 = min(currentx1, nextx1)
+                boundx2 = max(currentx2, nextx2)
+                boundy1 = min(currenty1, nexty1)
+                boundy2 = max(currenty2, nexty2)
+                bound_area = (boundx2 - boundx1) * (boundy2 - boundy1)
+                current_box_area = (currentx2 - currentx1) * (currenty2 - currenty1)
+                next_box_area = (nextx2 - nextx1) * (nexty2 - nexty1)
+                # TODO: ADD THRESHOLD TO COMMON LIST OF PARAMS
+                if ((current_box_area + next_box_area) / bound_area) >= 0.9:
+                    currentx1 = boundx1
+                    currentx2 = boundy2
+                    currenty1 = boundy1
+                    currenty2 = boundy2
+                    indices.append(rect2[0])
+                    used_rects[i2] = True
+            accepted_boxes.append((indices, (currentx1, currenty1, currentx2, currenty2)))
+    for indices, box in accepted_boxes:
+        weighted_sum = 0
+        total_area = 0
+        characters = list()
+        for index in indices:
+            weighted_sum += centroids[index] * stats[index][4]
+            total_area += stats[index][4]
+            characters.append(get_component_roi(image, stats, index))
+        centroid = weighted_sum / total_area
+        text_regions[tuple(centroid)] = characters
     return text_regions
+
+
+def rotate_points(points, angle):
+    rotation_matrix = np.array([[cos(angle), -sin(angle)],
+                                [sin(angle, cos(angle))]])
+    transposed_points = np.transpose(points)
+    rotated_points = np.transpose(np.matmul(rotation_matrix, transposed_points))
+    return rotated_points
 
 
 def resize_region(region, ):

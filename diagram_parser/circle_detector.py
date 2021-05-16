@@ -81,7 +81,7 @@ def objective_function(param2, min_radius, num_circles, max_param_2, max_radius,
 
 
 def show_circles(image, circles):
-    for i in circles[0, :]:
+    for i in circles:
         cv2.circle(image, (i[0], i[1]), i[2], (0, 255, 0), 2)
         # draw the center of the circle
         cv2.circle(image, (i[0], i[1]), 2, (0, 0, 255), 3)
@@ -109,20 +109,26 @@ def clustering_filter(circles, image_size):
 def detect_circles(image):
     image = preprocess(image)
     best_params = get_best_params(image, objective_function=objective_function)
-    # TODO: MAYBE USE A MORE SOPHISTICATED WAY OF DETERMINING IF THE IMAGE CONTAINS CIRCLES
-    if best_params[0] > 60:
+    # TODO: MAYBE USE A MORE SOPHISTICATED WAY OF DETERMINING IF THE IMAGE CONTAINS CIRCLES. POSSIBLY OPTIMIZE
+    #  THRESHOLD BY USING the area under the ROC
+    if best_params[0] > 70:
 
         best_circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT,
                                         1.5, 1, param1=50, param2=best_params[0],
                                         minRadius=best_params[1], maxRadius=int((image.shape[0] + image.shape[1])/ 4))
         filtered_circles = clustering_filter(best_circles, image.shape)
-        return filtered_circles
+        if filtered_circles is not None:
+            return filtered_circles
+        else:
+            return np.array([])
     else:
-        np.array([])
-
-# img = cv2.imread('test_images/circle.png')
-# circles = detect_circles(img)
+        return np.array([])
+#
+# img = cv2.imread('test_images/concentric_circles.png')
+# gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+# circles = detect_circles(gray)
 # if circles is not None:
+#     print(circles)
 #     show_circles(img, circles.astype(np.uint16))
 
 

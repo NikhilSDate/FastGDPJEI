@@ -48,8 +48,17 @@ class PrimitiveGroup:
             elif type == 'i':
                 if len(primitive_list) > 1:
                     penalty += 50 * (len(primitive_list) - 1)
+        if 'c' not in self.primitives and 'i' not in self.primitives:
+            print('only text')
+            penalty += 10000
         return penalty
-
+    def weight(self):
+        weight = 0
+        if self.contains('i'):
+            weight = np.linalg.norm(self.centroid('t') - self.centroid('i'))
+        elif self.contains('c'):
+            weight = np.linalg.norm(self.centroid('t') - self.centroid('c'))
+        return 1/weight
     def __str__(self):
         return f'PrimitiveGroup({self.primitives})'
     def __repr__(self):
