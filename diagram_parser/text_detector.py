@@ -81,7 +81,7 @@ def remove_text(image):
 
 
 def text_components_with_centroids(image):
-    # TODO:KEEP TRACK OF INDICES INSTEAD OF USING A DICTIONARY
+    # TODO:FIX LOWER THRESHOLD
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     text_regions = dict()
     (_, labels, stats, centroids), area_threshold, thresholded = connected_components_and_threshold(
@@ -89,7 +89,7 @@ def text_components_with_centroids(image):
     bounding_rects = list()
     for idx, stat in enumerate(stats):
 
-        if stat[4] < area_threshold:
+        if 20 < stat[4] < area_threshold:
             points = []
             for y in range(stat[1], stat[1] + stat[3]):
                 for x in range(stat[0], stat[0] + stat[2]):

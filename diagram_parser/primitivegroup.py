@@ -14,10 +14,14 @@ class PrimitiveGroup:
         self.num_primitives = self.num_primitives + 1
     def contains(self, type):
         return type in self.primitives
-    def coord_list(self):
+    def coord_list(self, type=None, labels_only=None, info_text_only=None):
         coord_list = list()
         for key, value in self.primitives.items():
-            coord_list.extend([primitive.coords for primitive in value])
+            if type is None:
+                coord_list.extend([primitive.coords for primitive in value])
+            elif key == type:
+                coord_list.extend([primitive.coords for primitive in value])
+
         return coord_list
     def variance(self):
         if len(self.coord_list())<2:
@@ -32,12 +36,15 @@ class PrimitiveGroup:
                 if np.linalg.norm(np.subtract(coord2, coord1)) > diameter:
                     diameter = np.linalg.norm(np.subtract(coord2, coord1))
         return diameter
-    def centroid(self, type=None):
-        if type is None:
+    def centroid(self, *type_list):
+        if len(type_list) == 0:
             return np.mean(self.coord_list(), axis=0)
         else:
-            primitives_with_type = self.primitives[type]
-            coords = [primitive.coords for primitive in primitives_with_type]
+            coords = []
+            for type in type_list:
+                if type in self.primitives:
+                    primitives_with_type = self.primitives[type]
+                    coords.extend([primitive.coords for primitive in primitives_with_type])
             return np.mean(coords, axis=0)
     def penalty(self):
         penalty = 0
@@ -55,10 +62,15 @@ class PrimitiveGroup:
     def weight(self):
         weight = 0
         if self.contains('i'):
-            weight = np.linalg.norm(self.centroid('t') - self.centroid('i'))
+            i_centroid = self.centroid('i')
+            for text_coord in self.coord_list('t'):
+                weight += np.linalg.norm(text_coord - i_centroid)
         elif self.contains('c'):
-            weight = np.linalg.norm(self.centroid('t') - self.centroid('c'))
-        return 1/weight
+            c_centroid = self.centroid('c')
+            for text_coord in self.coord_list('t', labels_only=True):
+                weight += np.linalg.norm(text_coord - c_centroid)
+        weight = weight / len(self.coord_list('t'))
+        return math.exp(-weight)
     def __str__(self):
         return f'PrimitiveGroup({self.primitives})'
     def __repr__(self):

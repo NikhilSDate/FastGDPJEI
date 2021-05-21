@@ -133,16 +133,20 @@ def get_merged_intersections(lines, circles, image_shape):
                 valid_solutions = []
                 solution1 = intersection_point[0]
                 solution2 = intersection_point[1]
-                if type(solution1[0]) != sp.core.add.Add and (0 <= solution1[0] <= image_shape[1]) and type(solution1[1]) != sp.core.add.Add and (
+                if type(solution1[0]) != sp.core.add.Add and (0 <= solution1[0] <= image_shape[1]) and type(
+                        solution1[1]) != sp.core.add.Add and (
                         0 <= solution1[1] <= image_shape[0]):
                     valid_solutions.append((float(solution1[0]), float(solution1[1].evalf())))
-                if type(solution2[0]) != sp.core.add.Add and (0 <= solution2[0] <= image_shape[1]) and type(solution2[1]) != sp.core.add.Add and (
+                if type(solution2[0]) != sp.core.add.Add and (0 <= solution2[0] <= image_shape[1]) and type(
+                        solution2[1]) != sp.core.add.Add and (
                         0 <= solution2[1] <= image_shape[0]):
                     valid_solutions.append((float(solution2[0].evalf()), float(solution2[1].evalf())))
                 if len(valid_solutions) > 0:
                     intersections[idx] = valid_solutions
                 for valid_solution in valid_solutions:
                     final_intersections[valid_solution] = idx
+    for i, circle in enumerate(circles):
+        final_intersections[(circle[0], circle[1])] = (f'c{i}',)
     return final_intersections
     # merge similar intersections
     grid = []
@@ -256,17 +260,17 @@ def get_primitives(image):
     lines = get_filtered_lines(filtered)
     circles = detect_circles(filtered)
     image_with_lines = draw_lines(image, lines)
-    cv2.imshow('lines', image_with_lines)
+    # cv2.imshow('lines', image_with_lines)
     intersections = get_merged_intersections(lines, circles, image.shape)
     corners = get_corners(image)
     image_with_corners = draw_corners(image, corners)
-    cv2.imshow('corners', image_with_corners)
+    # cv2.imshow('corners', image_with_corners)
     cv2.waitKey()
     text_regions = text_components_with_centroids(image)
     return corners, lines, intersections, text_regions
 
 
-image = cv2.imread('../aaai/013.png')
+image = cv2.imread('../aaai/058.png')
 
 corner_int_img = image.copy()
 
@@ -276,6 +280,8 @@ for idx, intersection in enumerate(intersections.keys()):
     primitives.append(Primitive(intersection, 'i', idx))
 for idx, corner in enumerate(corners):
     primitives.append(Primitive((corner[0], corner[1]), 'c', idx))
+
+
 # for idx, coords in enumerate(text_regions.keys()):
 #     primitives.append(Primitive(coords, 't', idx))
 
@@ -288,24 +294,64 @@ def average_distance(point, points):
     return distance
 
 
+
 def search_for_solution(primitives, corners, lines, intersections, text_regions):
     primitive_list = [primitive.coords for primitive in primitives]
-    clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.2 * image.shape[0]).fit(primitive_list)
-    clustering = DBSCAN(eps=0.1 * image.shape[0], min_samples=1).fit(primitive_list)
+    character_predictor = CharacterPredictor()
+
+    clustering = DBSCAN(eps=0.05 * (image.shape[0] + image.shape[1]) / 2, min_samples=1).fit(primitive_list)
     cluster_list = []
     num_clusters = max(clustering.labels_) + 1
     for _ in range(num_clusters):
         cluster_list.append(PrimitiveGroup())
     for idx, label in enumerate(clustering.labels_):
         cluster_list[label].add(primitives[idx])
+    letters = []
+    numbers = []
+    for idx, coords in enumerate(text_regions.keys()):
+        is_letter = character_predictor.is_letter(text_regions[coords])
+        if is_letter:
+            letters.append(Primitive(coords, 't', idx, is_letter=is_letter))
+        else:
+            numbers.append(Primitive(coords, 't', idx, is_letter=is_letter))
+        primitives.append(Primitive(coords, 't', idx, is_letter=is_letter))
+    search_queue = Queue()
+    search_queue.put(SearchNode(primitives, lines, cluster_list))
+    best_child = None
+    while search_queue and letters:
+        node = search_queue.get()
+        if node.level >= len(letters):
+            break
+        children = node.generate_children(letters[node.level])
+        sorted_children = sorted(children, key=lambda x: x.fitness())
+        best_child = sorted_children[-1]
+
+        if len(sorted_children) < 1:
+            for child in sorted_children:
+                search_queue.put(child)
+        else:
+            for child in sorted_children[-1:]:
+                search_queue.put(child)
+    # for index, point in enumerate(best_child.points):
+    #     hue = 179 * index/len(best_child.points)
+    #     hsv = np.uint8([[[hue, 255, 255]]])
+    #     rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]
+    #     for coord in point.coord_list():
+    #         cv2.circle(image, (int(coord[0]), int(coord[1])), 2, rgb.tolist(), -1)
+    # cv2.imshow('test', image)
+    # cv2.waitKey()
+
     diagram_interpretation = Interpretation()
-    for cluster in cluster_list:
+    # TODO: RECOGNIZE WHEN A POINT IS THE CENTER OF A CIRCLE. CURRENTLY CODE THINKS IT LIES ON THE CIRCLE
+    for primitive_group_index, cluster in enumerate(best_child.points):
         if cluster.contains('t') and cluster.contains('i'):
-            point = Point()
+            point = Point(primitive_group_index)
 
             for text_primitive in cluster.primitives['t']:
                 text_region = list(text_regions.values())[text_primitive.index]
-                text = ''.join([CharacterPredictor().predict_character(character_region, allowed_characters='uppercase') for character_region in text_region])
+                text = ''.join(
+                    [character_predictor.predict_character(character_region, allowed_characters='uppercase') for
+                     character_region in text_region])
                 point.add_label(text)
             for intersection in cluster.primitives['i']:
                 structures = list(intersections.values())[intersection.index]
@@ -313,7 +359,7 @@ def search_for_solution(primitives, corners, lines, intersections, text_regions)
                     point.add_property('lieson', structure)
             diagram_interpretation.add_point(point)
         elif cluster.contains('i'):
-            point = Point()
+            point = Point(primitive_group_index)
 
             label = f'p{diagram_interpretation.num_points()}'
             point.add_label(label)
@@ -331,10 +377,11 @@ def search_for_solution(primitives, corners, lines, intersections, text_regions)
                 if point_to_line_distance(corner_centroid, line) < 5:
                     line_set.add(idx)
             if len(line_set) > 0:
-                point = Point()
+                point = Point(primitive_group_index)
                 for text_primitive in cluster.primitives['t']:
                     text_region = list(text_regions.values())[text_primitive.index]
-                    text = ''.join([CharacterPredictor().predict_character(character_region) for character_region in text_region])
+                    text = ''.join(
+                        [character_predictor.predict_character(character_region) for character_region in text_region])
                     point.add_label(text)
                 point.add_label()
                 for line in line_set:
@@ -343,70 +390,51 @@ def search_for_solution(primitives, corners, lines, intersections, text_regions)
         elif cluster.contains('t'):
             for text_primitive in cluster.primitives['t']:
                 text_region = list(text_regions.values())[text_primitive.index]
-                text = ''.join([CharacterPredictor().predict_character(character_region) for character_region in text_region])
+                text = ''.join(
+                    [character_predictor.predict_character(character_region) for character_region in text_region])
     print(diagram_interpretation)
-    for idx, cluster in enumerate(primitive_list):
-        hue = 179 * clustering.labels_[idx] / num_clusters
-        hsv = np.uint8([[[hue, 255, 255]]])
-        rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]
-        cv2.circle(image, (int(cluster[0]), int(cluster[1])), 2, rgb.tolist(), thickness=-1)
-    cv2.imshow('clustering', image)
-    cv2.moveWindow('clustering', 50, 50)
-    cv2.waitKey()
-    text_primitives = []
-    for idx, coords in enumerate(text_regions.keys()):
-        text_primitives.append(Primitive(coords, 't', idx))
-        primitives.append(Primitive(coords, 't', idx))
-    search_queue = Queue()
-    search_queue.put(SearchNode(primitives, cluster_list))
-    best_child = None
-    while search_queue and text_primitives:
-        node = search_queue.get()
-        if node.level >= len(text_primitives):
-            break
-        children = node.generate_children(text_primitives[node.level])
-        sorted_children = sorted(children, key=lambda x: x.fitness())
 
-        # if node.level<5:
-        #     if len(sorted_children)<2:
-        #         for child in sorted_children:
-        #             search_queue.put(child)
-        #     else:
-        #         for child in sorted_children[-2:]:
-        #             search_queue.put(child)
-        # else:
-        search_queue.put(sorted_children[-1])
-        best_child = sorted_children[-1]
-    for index, point in enumerate(best_child.points):
-        hue = 179 * index/len(best_child.points)
-        hsv = np.uint8([[[hue, 255, 255]]])
-        rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]
-        for coord in point.coord_list():
-            cv2.circle(image, (int(coord[0]), int(coord[1])), 2, rgb.tolist(), -1)
-    cv2.imshow('test', image)
-    cv2.waitKey()
+    get_point_projections(lines, best_child.points, diagram_interpretation)
+    number_search_queue = Queue()
+    best_child.reset_level()
+    best_child.set_interpretation(diagram_interpretation)
+    number_search_queue.put(best_child)
+    best_child_with_numbers = None
+    while number_search_queue:
+        node = number_search_queue.get()
+        if node.level >= len(numbers):
+            break
+        children = node.generate_children(numbers[node.level])
+        sorted_children = sorted(children, key=lambda x: x.fitness())
+        best_child_with_numbers = sorted_children[-1]
+
+        if len(sorted_children) < 1:
+            for child in sorted_children:
+                number_search_queue.put(child)
+        else:
+            for child in sorted_children[-1:]:
+                number_search_queue.put(child)
+    print(best_child_with_numbers)
+
+def get_point_projections(lines, primitive_groups, interpretation):
+    points_on_line = dict()
+    for point in interpretation.points:
+        for property in point.properties:
+            if property[0] == 'lieson' and property[1][0] == 'l':
+                if property[1] not in points_on_line:
+                    points_on_line[property[1]] = [
+                        (point.labels[0], primitive_groups[point.primitive_group_idx].centroid('i', 'c'))]
+                else:
+                    points_on_line[property[1]].append((point.labels[0], primitive_groups[point.primitive_group_idx].centroid()))
+    print(points_on_line)
+
+    # for idx, cluster in enumerate(primitive_list):
+    #     hue = 179 * clustering.labels_[idx] / num_clusters
+    #     hsv = np.uint8([[[hue, 255, 255]]])
+    #     rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]
+    #     cv2.circle(image, (int(cluster[0]), int(cluster[1])), 2, rgb.tolist(), thickness=-1)
+
+
 
 
 search_for_solution(primitives, corners, lines, intersections, text_regions)
-
-# text_centroids = text_regions.keys()
-# strong_pairs = get_strong_pairs(corners, intersections, comparator=coord_intersection_distance)
-# strong_triples = get_strong_triples(strong_pairs, text_centroids)
-# weak_corners, weak_intersections, weak_centroids = get_weak_primitives(corners, intersections, text_centroids, [])
-# corner_int = get_strong_pairs(weak_corners, weak_intersections, comparator=coord_intersection_distance)
-# corner_cent = get_strong_pairs(weak_corners, weak_centroids, comparator=coord_pair_distance)
-# cent_int = get_strong_pairs(weak_centroids, weak_intersections, comparator=coord_intersection_distance)
-# # character = CharacterPredictor().predict_character(text_regions[strong_triples[2][2]])
-# # print(strong_triples)
-# # cv2.imshow('character', text_regions[strong_triples[2][2]])
-# # cv2.waitKey()
-# for pair in corner_int:
-#     cornerX, cornerY = int(pair[0][0]), int(pair[0][1])
-#     intX, intY = int(pair[1][0][0]), int(pair[1][0][1])
-#     cv2.circle(corner_int_img, (cornerX, cornerY), 2, [255, 0, 0], -1)
-#     cv2.circle(corner_int_img, (intX, intY), 2, [0, 255, 0], -1)
-#
-# image_with_intersections = image.copy()
-# image_with_corners = draw_corners(image, corners)
-# for point, line_indices in intersections.items():
-#     cv2.circle(image_with_intersections, (int(point[0]), int(point[1])), 2, [0, 0, 255], -1)

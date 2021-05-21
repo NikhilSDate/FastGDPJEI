@@ -30,7 +30,3 @@ pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesserac
 #         total_files = total_files + 1
 #         if(total_files%10==0):
 #             print(total_files, num_right)
-
-image = Image.open('../aaai/000.png')
-image = image.point(lambda p: p > 150 and 255)
-print(pytesseract.image_to_data(image, config=' --psm 12'))

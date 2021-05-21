@@ -1,7 +1,9 @@
 import cv2.cv2 as cv2
 import numpy as np
+from diagram_parser.text_detector import remove_text
 import matplotlib.pyplot as plt
-from numpy import cos, sin
+from numpy import cos, sin, arctan2
+from math import sqrt
 
 
 def preprocess(img):
@@ -60,6 +62,22 @@ def filter_lines(lines, image_size):
             filtered_lines.append(average_line)
 
     return filtered_lines
+def filter_lines_p(lines_p, image_size):
+    accepted_line_groups = list()
+    while len(lines_p) > 0:
+        indices_to_remove = [0]
+        line = lines_p[0]
+        current_set = [line]
+        for idx, line2 in enumerate(lines_p[1:], start=1):
+            if close_enough_p(line, line2, image_size):
+                indices_to_remove.append(idx)
+                current_set.append(line2)
+        accepted_line_groups.append(current_set)
+        lines_p = np.delete(lines_p, indices_to_remove, axis=0)
+    filtered_lines_p = []
+    for line_group in accepted_line_groups:
+        print(line_group)
+    return filtered_lines_p
 
 
 def convert_to_positive(line):
@@ -85,9 +103,24 @@ def close_enough(line1, line2, image_size):
         angle_difference = 2 * np.pi - angle_difference
     rho_difference = abs(rho1 - rho2)
     # TODO: TUNE THESE PARAMETERS
-    if angle_difference < 0.1 and rho_difference < 0.075*(image_size[0]+image_size[1])/2:
+    if angle_difference < 0.1 and rho_difference < 0.075 * (image_size[0] + image_size[1]) / 2:
         return True
     return False
+def close_enough_p(line1, line2, image_size):
+    hesse_line1 = convert_to_hesse_normal_form(line1)
+    hesse_line2 = convert_to_hesse_normal_form(line2)
+    return close_enough(hesse_line1, hesse_line2, image_size)
+def convert_to_hesse_normal_form(line):
+    x1, y1, x2, y2 = line
+    A = y1 - y2
+    B = x2 - x1
+    C = (x1-x2)*y1 + (y2-y1)*x1
+    cosine = A/sqrt(A**2+B**2)
+    sine = B/sqrt(A**2+B**2)
+    negative_rho = C/sqrt(A**2+B**2)
+    rho = -negative_rho
+    theta = arctan2(sine, cosine)
+    return rho, theta
 
 
 def get_hough_lines(img):
@@ -129,18 +162,22 @@ def get_filtered_lines(img):
         return filtered_lines
 
 
-# image = cv2.imread('../aaai/022.png')
+# image = cv2.imread('../aaai/023.png')
+# filtered_image = remove_text(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
+# old_lines_image = image.copy()
+# edges = cv2.Canny(filtered_image, 50, 150, apertureSize=3)
 #
-# lines = get_hough_lines(image)
-#
-# cleaned_lines = [line[0] for line in lines]
-# print(cleaned_lines)
-# filtered_lines = get_filtered_lines(image)
-# cv2.imshow('raw lines', draw_lines(image, cleaned_lines))
-# cv2.imshow('old_algorithm', draw_lines(image, filtered_lines))
-# x, y = zip(*cleaned_lines)
-# plt.scatter(x, y, )
-# plt.xlim(-200, 200)
-# plt.ylim(-np.pi, np.pi)
-# # plt.show()
+# lines = cv2.HoughLinesP(edges, rho=1, theta=1 * np.pi / 180, threshold=45, minLineLength=10, maxLineGap=10)
+# lines = [line[0] for line in lines]
+# filtered_lines = filter_lines_p(lines, image.shape)
+# old_lines = get_filtered_lines(filtered_image)
+# N = len(lines)
+# for i in range(N):
+#     x1 = int(lines[i][0])
+#     y1 = int(lines[i][1])
+#     x2 = int(lines[i][2])
+#     y2 = int(lines[i][3])
+#     cv2.line(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
+# cv2.imshow('old lines', draw_lines(old_lines_image, old_lines))
+# cv2.imshow('lines', image)
 # cv2.waitKey()

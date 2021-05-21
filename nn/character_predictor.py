@@ -42,6 +42,24 @@ class CharacterPredictor():
             predicted_index = np.argmax(y_pred[0, 36:]) + 36
             character = self.labels[predicted_index]
             return character
+    def is_letter(self, character_sequence):
+        is_letter = True
+        for character_image in character_sequence:
+            shape = character_image.shape
+            max_shape = max(shape[0], shape[1])
+            width_padding = int((max_shape - shape[0]) / 2)
+            height_padding = int((max_shape - shape[1]) / 2)
+            bordered = cv2.copyMakeBorder(character_image, width_padding + 2, width_padding + 2, height_padding + 2,
+                                          height_padding + 2,
+                                          borderType=cv2.BORDER_CONSTANT, value=(255, 255, 255))
+            img = np.reshape(bordered, newshape=(bordered.shape[0], bordered.shape[1], 1))
+            img = np.expand_dims(img, axis=0)
+            y_pred = self.model.predict(img, batch_size=1)
+            if np.argmax(y_pred) < 10:
+                is_letter = False
+                break
+        return is_letter
+
 
 
 
