@@ -1,4 +1,4 @@
-from diagram_parser.line_detecter import get_filtered_lines, draw_lines
+from diagram_parser.line_detecter import get_filtered_lines, draw_lines, inclination
 from diagram_parser.corner_detector import get_corners, draw_corners
 from diagram_parser.text_detector import text_components_with_centroids, remove_text
 from diagram_parser.circle_detector import detect_circles
@@ -17,7 +17,7 @@ from diagram_parser.point import Point
 from queue import Queue
 from sklearn.cluster import AgglomerativeClustering, DBSCAN
 import sympy as sp
-
+import skspatial.objects as skobj
 
 def is_pair_consistent(pairs, pair):
     consistent = True
@@ -257,10 +257,11 @@ def get_weak_primitives(corners, intersections, centroids, strong_items):
 def get_primitives(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     filtered = remove_text(gray)
+    cv2.imshow('filtered', filtered)
     lines = get_filtered_lines(filtered)
     circles = detect_circles(filtered)
     image_with_lines = draw_lines(image, lines)
-    # cv2.imshow('lines', image_with_lines)
+    cv2.imshow('lines', image_with_lines)
     intersections = get_merged_intersections(lines, circles, image.shape)
     corners = get_corners(image)
     image_with_corners = draw_corners(image, corners)
@@ -270,7 +271,7 @@ def get_primitives(image):
     return corners, lines, intersections, text_regions
 
 
-image = cv2.imread('../aaai/058.png')
+image = cv2.imread('../aaai/034.png')
 
 corner_int_img = image.copy()
 
@@ -317,7 +318,7 @@ def search_for_solution(primitives, corners, lines, intersections, text_regions)
         primitives.append(Primitive(coords, 't', idx, is_letter=is_letter))
     search_queue = Queue()
     search_queue.put(SearchNode(primitives, lines, cluster_list))
-    best_child = None
+    best_child = SearchNode(primitives, lines, cluster_list)
     while search_queue and letters:
         node = search_queue.get()
         if node.level >= len(letters):
@@ -371,10 +372,9 @@ def search_for_solution(primitives, corners, lines, intersections, text_regions)
 
         elif cluster.contains('t') and cluster.contains('c'):
             line_set = set()
-            corner_centroid = cluster.centroid(type='c')
+            corner_centroid = cluster.centroid('c')
             for idx, line in enumerate(lines):
-                # TODO: THIS THRESHOLD IS ARBITRARY. CHOOSE A RELATIVE THRESHOLD OR REPLACE THIS WHOLE BY A DECISION TREE
-                if point_to_line_distance(corner_centroid, line) < 5:
+                if point_to_line_distance(corner_centroid, line) < 0.03*(image.shape[0]*image.shape[1])/2:
                     line_set.add(idx)
             if len(line_set) > 0:
                 point = Point(primitive_group_index)
@@ -387,19 +387,12 @@ def search_for_solution(primitives, corners, lines, intersections, text_regions)
                 for line in line_set:
                     point.add_property('lieson', f'l{line}')
                 diagram_interpretation.add_point(point)
-        elif cluster.contains('t'):
-            for text_primitive in cluster.primitives['t']:
-                text_region = list(text_regions.values())[text_primitive.index]
-                text = ''.join(
-                    [character_predictor.predict_character(character_region) for character_region in text_region])
-    print(diagram_interpretation)
-
-    get_point_projections(lines, best_child.points, diagram_interpretation)
+    point_projections = get_point_projections(lines, best_child.points, diagram_interpretation)
     number_search_queue = Queue()
     best_child.reset_level()
-    best_child.set_interpretation(diagram_interpretation)
+    best_child.set_point_projections(point_projections)
     number_search_queue.put(best_child)
-    best_child_with_numbers = None
+    best_child_with_numbers = best_child
     while number_search_queue:
         node = number_search_queue.get()
         if node.level >= len(numbers):
@@ -415,6 +408,12 @@ def search_for_solution(primitives, corners, lines, intersections, text_regions)
             for child in sorted_children[-1:]:
                 number_search_queue.put(child)
     print(best_child_with_numbers)
+    print(diagram_interpretation)
+    # for idx, cluster in enumerate(primitive_list):
+    #     hue = 179 * clustering.labels_[idx] / num_clusters
+    #     hsv = np.uint8([[[hue, 255, 255]]])
+    #     rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]
+    #     cv2.circle(image, (int(cluster[0]), int(cluster[1])), 2, rgb.tolist(), thickness=-1)
 
 def get_point_projections(lines, primitive_groups, interpretation):
     points_on_line = dict()
@@ -422,19 +421,34 @@ def get_point_projections(lines, primitive_groups, interpretation):
         for property in point.properties:
             if property[0] == 'lieson' and property[1][0] == 'l':
                 if property[1] not in points_on_line:
+
                     points_on_line[property[1]] = [
                         (point.labels[0], primitive_groups[point.primitive_group_idx].centroid('i', 'c'))]
                 else:
                     points_on_line[property[1]].append((point.labels[0], primitive_groups[point.primitive_group_idx].centroid()))
-    print(points_on_line)
+    for line_index, points in points_on_line.items():
+        sk_line = find_sk_line(lines[int(line_index[1])])
+        projected_points = []
+        for point in points:
+            projected_coords = sk_line.project_point(skobj.Point(point[1]))
+            projected_points.append((point[0], projected_coords))
+        points_on_line[line_index] = projected_points
+    for line_index, points in points_on_line.items():
+        line = lines[int(line_index[1])]
+        if np.pi/4 < inclination(line[1]) < 3 * np.pi/4:
+            points_on_line[line_index] = sorted(points, key=lambda p: p[1][1])
+        else:
+            points_on_line[line_index] = sorted(points, key=lambda p: p[1][0])
+    return points_on_line
+def find_sk_line(hesse_line):
+    rho = hesse_line[0]
+    theta = hesse_line[1]
+    point = (rho*cos(theta), rho*sin(theta))
+    rotation_matrix = np.array([[cos(np.pi/2), -sin(np.pi/2)],
+                                    [sin(np.pi/2), cos(np.pi/2)]])
+    if point != (0., 0.):
+        direction = np.dot(rotation_matrix, point)
+    else:
 
-    # for idx, cluster in enumerate(primitive_list):
-    #     hue = 179 * clustering.labels_[idx] / num_clusters
-    #     hsv = np.uint8([[[hue, 255, 255]]])
-    #     rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]
-    #     cv2.circle(image, (int(cluster[0]), int(cluster[1])), 2, rgb.tolist(), thickness=-1)
-
-
-
-
+    return skobj.Line(point, direction)
 search_for_solution(primitives, corners, lines, intersections, text_regions)

@@ -13,11 +13,11 @@ def preprocess(img):
     return blur
 
 
-def inclination(alpha):
-    if alpha > np.pi / 2:
-        return alpha - (np.pi / 2)
+def inclination(theta):
+    if theta > np.pi / 2:
+        return theta - (np.pi / 2)
     else:
-        return alpha + (np.pi / 2)
+        return theta + (np.pi / 2)
 
 
 # def filter_lines(lines, index):

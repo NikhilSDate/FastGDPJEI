@@ -17,13 +17,12 @@ def threshold_image(image):
 
 def connected_components_and_threshold(image):
     gray = image
-
     threshold = cv2.threshold(gray, -1, 255, cv2.THRESH_OTSU)[1]  # ensure binary
-
     components = cv2.connectedComponentsWithStats(threshold, connectivity=8)
     stats = components[2]
-    small_areas = stats[1:, 4]
-    area_threshold = otsus_threshold(sorted(small_areas))
+    stats_with_small_areas = stats[1:]
+    areas = [stat[2]*stat[3] for stat in stats_with_small_areas]
+    area_threshold = otsus_threshold(areas)
     return components, area_threshold, threshold
 
 
@@ -59,7 +58,7 @@ def white_out_components_with_threshold(image, components, threshold):
     rejected_labels = []
     mask = np.zeros_like(image)
     for idx, stat in enumerate(stats):
-        if stat[4] < threshold:
+        if stat[4] < min(threshold, 500):
             rejected_labels.append(idx)
     for idx, label in np.ndenumerate(labels):
         if label in rejected_labels:
@@ -88,8 +87,8 @@ def text_components_with_centroids(image):
         cv2.bitwise_not(image))
     bounding_rects = list()
     for idx, stat in enumerate(stats):
-
-        if 20 < stat[4] < area_threshold:
+        # TODO: IMPLEMENT SMARTER METHOD FOR FIGURING OUT IF THE BLOB CONTAINS TEXT OR NOT
+        if 20 < stat[2]*stat[3] <= (0.01 * image.shape[0] * image.shape[1]):
             points = []
             for y in range(stat[1], stat[1] + stat[3]):
                 for x in range(stat[0], stat[0] + stat[2]):
@@ -97,7 +96,10 @@ def text_components_with_centroids(image):
                         points.append((x, y))
             points = np.array(points, dtype=np.float32)
             rect = cv2.boundingRect(points)
+
             bounding_rects.append((idx, rect))
+#            cv2.imshow(str(idx), get_component_roi(image, stats, idx))
+#    cv2.waitKey()
 
     bounding_rects = sorted(bounding_rects, key=lambda rect: rect[1][0])
     used_rects = list()
@@ -126,7 +128,7 @@ def text_components_with_centroids(image):
                 current_box_area = (currentx2 - currentx1) * (currenty2 - currenty1)
                 next_box_area = (nextx2 - nextx1) * (nexty2 - nexty1)
                 # TODO: ADD THRESHOLD TO COMMON LIST OF PARAMS
-                if ((current_box_area + next_box_area) / bound_area) >= 0.9:
+                if ((current_box_area + next_box_area) / bound_area) >= 0.7:
                     currentx1 = boundx1
                     currentx2 = boundy2
                     currenty1 = boundy1

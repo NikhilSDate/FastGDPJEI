@@ -7,7 +7,7 @@ import math
 
 class SearchNode:
 
-    def __init__(self, primitives, lines, points=None, current_interpretation=None):
+    def __init__(self, primitives, lines, points=None, point_projections=None):
         if points is None:
             self.points = list()
         else:
@@ -17,8 +17,7 @@ class SearchNode:
         self.primitive_set = set(primitives)
         self.lines = lines
         self.level = 0
-        self.current_interpretation = current_interpretation
-
+        self.point_projections = point_projections
     def generate_children(self, primitive):
         children = []
         possible_operations = ['do_nothing']
@@ -55,7 +54,7 @@ class SearchNode:
             if point.contains('t'):
                 fitness += point.weight()
         for info_label in self.info_labels:
-            fitness += info_label.weight(self.points, self.lines, self.current_interpretation)
+            fitness += info_label.weight(self.points, self.lines, self.point_projections)
         return fitness
 
     def total_variance(self):
@@ -64,13 +63,13 @@ class SearchNode:
         return np.trace(np.cov(data))
     def reset_level(self):
         self.level = 0
-    def set_interpretation(self, interpretation):
-        self.current_interpretation = interpretation
+    def set_point_projections(self, projections):
+        self.point_projections = projections
     def __copy__(self):
         return copy.deepcopy(self)
 
     def __str__(self) -> str:
-        return f'SearchNode(points = {self.points},\n Info groups = {self.info_labels}, \nNoise = {self.noise_set})'
+        return f'SearchNode(points = {self.points},\n Info groups = {self.info_labels})'
 
     def __repr__(self):
         return '\n' + self.__str__()
