@@ -107,10 +107,10 @@ def close_enough(line1, line2, image_size):
         return True
     return False
 def close_enough_p(line1, line2, image_size):
-    hesse_line1 = convert_to_hesse_normal_form(line1)
-    hesse_line2 = convert_to_hesse_normal_form(line2)
+    hesse_line1 = hesse_normal_form(line1)
+    hesse_line2 = hesse_normal_form(line2)
     return close_enough(hesse_line1, hesse_line2, image_size)
-def convert_to_hesse_normal_form(line):
+def hesse_normal_form(line):
     x1, y1, x2, y2 = line
     A = y1 - y2
     B = x2 - x1
@@ -162,7 +162,7 @@ def get_filtered_lines(img):
         return filtered_lines
 
 
-# image = cv2.imread('../aaai/023.png')
+# image = cv2.imread('../aaai/042.png')
 # filtered_image = remove_text(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
 # old_lines_image = image.copy()
 # edges = cv2.Canny(filtered_image, 50, 150, apertureSize=3)

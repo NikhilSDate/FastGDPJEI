@@ -162,3 +162,11 @@ def filter_circles(circles):
         if not suppress:
             strong_circles.append(circle)
     return np.array([strong_circles])
+def circles_close_enough(circle1, circle2):
+    total_radius = circle1[2] + circle2[2]
+    circle_coords = np.array([circle1[0], circle1[1]])
+    strong_circle_coords = np.array([circle2[0], circle2[1]])
+    distance = np.linalg.norm(circle_coords - strong_circle_coords)
+    radius_difference = abs(int(circle2[2]) - int(circle1[2]))
+    hausdorff = distance + radius_difference
+    return hausdorff / total_radius < 0.1
