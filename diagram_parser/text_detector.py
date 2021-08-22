@@ -2,6 +2,7 @@ import cv2.cv2 as cv2
 import numpy as np
 from utils.tools import freedman_diaconis_bins, otsus_threshold
 from numpy import cos, sin
+from diagram_parser.params import Params
 
 
 def preprocess(image):
@@ -88,6 +89,8 @@ def text_components_with_centroids(image):
     bounding_rects = list()
     for idx, stat in enumerate(stats):
         # TODO: IMPLEMENT SMARTER METHOD FOR FIGURING OUT IF THE BLOB CONTAINS TEXT OR NOT
+        low = Params.params['text_detector_is_text_blob_low_thresh']
+        high = Params.params['text_detector_is_text_blob_high_thresh']
         if 20 < stat[2]*stat[3] <= (0.01 * image.shape[0] * image.shape[1]):
             points = []
             for y in range(stat[1], stat[1] + stat[3]):
@@ -127,8 +130,9 @@ def text_components_with_centroids(image):
                 bound_area = (boundx2 - boundx1) * (boundy2 - boundy1)
                 current_box_area = (currentx2 - currentx1) * (currenty2 - currenty1)
                 next_box_area = (nextx2 - nextx1) * (nexty2 - nexty1)
-                # TODO: ADD THRESHOLD TO COMMON LIST OF PARAMS
-                if ((current_box_area + next_box_area) / bound_area) >= 0.7:
+                # PARAM: TEXT_DETECTOR_MERGE_BOXES_THRESHOLD
+                overlap_threshold = Params.params['text_detector_box_overlap_threshold']
+                if ((current_box_area + next_box_area) / bound_area) >= overlap_threshold:
                     currentx1 = boundx1
                     currentx2 = boundy2
                     currenty1 = boundy1

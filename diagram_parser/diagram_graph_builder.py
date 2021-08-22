@@ -18,6 +18,7 @@ from queue import Queue
 from sklearn.cluster import AgglomerativeClustering, DBSCAN
 import sympy as sp
 import skspatial.objects as skobj
+from diagram_parser.params import Params
 
 
 def is_pair_consistent(pairs, pair):
@@ -260,6 +261,8 @@ def get_primitives(image):
     filtered = remove_text(gray)
     #    cv2.imshow('filtered', filtered)
     lines = get_filtered_lines(filtered)
+    old_lines = get_filtered_lines(filtered)
+
     circles = detect_circles(filtered)
     image_with_lines = draw_lines(image, lines)
     #    cv2.imshow('lines', image_with_lines)
@@ -286,7 +289,7 @@ def parse_diagran(diagram_image):
         line_dict[f'l{idx}'] = line
     for idx, circle in enumerate(circles):
         circle_dict[f'c{idx}'] = circle
-    return build_interpretation(primitives, lines, circles, intersections, text_regions, diagram_image.shape), line_dict, circle_dict
+    return build_interpretation(primitives, lines, circles, intersections, text_regions, diagram_image.shape, diagram_image), line_dict, circle_dict
 
 
 # for idx, coords in enumerate(text_regions.keys()):
@@ -301,11 +304,12 @@ def average_distance(point, points):
     return distance
 
 
-def build_interpretation(primitives, lines, circles, intersections, text_regions, image_shape):
+def build_interpretation(primitives, lines, circles, intersections, text_regions, image_shape, image):
     primitive_list = [primitive.coords for primitive in primitives]
     character_predictor = CharacterPredictor()
-
-    clustering = DBSCAN(eps=0.05 * (image_shape[0] + image_shape[1]) / 2, min_samples=1).fit(primitive_list)
+    # PARAM diagram_graph_builder_clustering_eps
+    eps = Params.params['diagram_graph_builder_dbscan_eps']
+    clustering = DBSCAN(eps=eps * (image_shape[0] + image_shape[1]) / 2, min_samples=1).fit(primitive_list)
     cluster_list = []
     num_clusters = max(clustering.labels_) + 1
     for _ in range(num_clusters):

@@ -1,6 +1,6 @@
 import cv2.cv2 as cv2
 import numpy as np
-from diagram_parser.text_detector import remove_text
+from diagram_parser.params import Params
 import matplotlib.pyplot as plt
 from numpy import cos, sin, arctan2
 from math import sqrt
@@ -76,7 +76,27 @@ def filter_lines_p(lines_p, image_size):
         lines_p = np.delete(lines_p, indices_to_remove, axis=0)
     filtered_lines_p = []
     for line_group in accepted_line_groups:
-        print(line_group)
+        first_line = line_group[0]
+        group_inclination = inclination(hesse_normal_form(first_line)[1])
+        x1, y1, x2, y2 = line_group[0]
+
+        if np.pi / 4 < group_inclination < 3 * np.pi / 4:
+            for line in line_group:
+                if line[1] < y1:
+                    y1 = line[1]
+                    x1 = line[0]
+                if line[3] > y2:
+                    y2 = line[3]
+                    x2 = line[2]
+        else:
+            for line in line_group:
+                if line[0] < x1:
+                    x1 = line[0]
+                    y1 = line[1]
+                if line[2] > x2:
+                    x2 = line[2]
+                    y2 = line[3]
+        filtered_lines_p.append([x1, y1, x2, y2])
     return filtered_lines_p
 
 
@@ -102,7 +122,10 @@ def close_enough(line1, line2, image_size):
     elif 3 * np.pi / 2 <= angle_difference < 2 * np.pi:
         angle_difference = 2 * np.pi - angle_difference
     rho_difference = abs(rho1 - rho2)
-    # TODO: TUNE THESE PARAMETERS
+    # PARAM line_detector_close_enough_angle_threshold
+    # PARAM line_detector_close_enough_rho_threshold
+    angle_thresh = Params.params['line_detector_close_enough_angle_threshold']
+    rho_thresh = Params.params['line_detector_close_enough_rho_threshold']
     if angle_difference < 0.1 and rho_difference < 0.075 * (image_size[0] + image_size[1]) / 2:
         return True
     return False
@@ -126,8 +149,17 @@ def hesse_normal_form(line):
 def get_hough_lines(img):
     # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # TODO: TUNE THESE PARAMETERS
-    edges = cv2.Canny(img, 50, 150, apertureSize=3)
+    canny_params = Params.params['line_detector_canny_params']
+    edges = cv2.Canny(img, canny_params[0], canny_params[1], apertureSize=canny_params[2])
     lines = cv2.HoughLines(edges, 1, np.pi / 45, 40)
+    return lines
+def get_hough_lines_p(img):
+    edges = cv2.Canny(img, 50, 150, apertureSize=3)
+    # PARAM line_detector_hough_p_params
+    rho, theta, thresh, minLineLength, maxLineGap = Params.params['line_detector_hough_p_params']
+
+    lines = cv2.HoughLinesP(edges, rho=rho, theta=theta, threshold=thresh, minLineLength=minLineLength, maxLineGap=maxLineGap)
+    lines = [line[0] for line in lines]
     return lines
 
 
@@ -153,31 +185,37 @@ def draw_lines(img, lines):
 
 
 def get_filtered_lines(img):
-    hough_lines = get_hough_lines(img)
-    if hough_lines is None:
-        return np.array([])
-    else:
-        hough_lines = [line[0] for line in hough_lines]  # remove double array
-        filtered_lines = filter_lines(hough_lines, img.shape)
-        return filtered_lines
-
-
-# image = cv2.imread('../aaai/042.png')
+    mode = Params.params['line_detector_mode']
+    if mode == 'hough':
+        hough_lines = get_hough_lines(img)
+        if hough_lines is None:
+            return np.array([])
+        else:
+            hough_lines = [line[0] for line in hough_lines]  # remove double array
+            filtered_lines = filter_lines(hough_lines, img.shape)
+            return filtered_lines
+    elif mode == 'hough_p_hesse':
+        hough_lines_p = get_hough_lines_p(img)
+        if hough_lines_p is None:
+            return np.array([])
+        else:
+            filtered_lines = filter_lines_p(hough_lines_p, img.shape)
+            hesse_lines = [np.array(hesse_normal_form(endpoints_line)) for endpoints_line in filtered_lines]
+            return hesse_lines
+#
+# #
+# image = cv2.imread('../textbooks/0030_copy.png')
 # filtered_image = remove_text(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
 # old_lines_image = image.copy()
-# edges = cv2.Canny(filtered_image, 50, 150, apertureSize=3)
-#
-# lines = cv2.HoughLinesP(edges, rho=1, theta=1 * np.pi / 180, threshold=45, minLineLength=10, maxLineGap=10)
-# lines = [line[0] for line in lines]
-# filtered_lines = filter_lines_p(lines, image.shape)
+# lines = get_filtered_lines(image, mode='hough_p_hesse')
 # old_lines = get_filtered_lines(filtered_image)
 # N = len(lines)
-# for i in range(N):
-#     x1 = int(lines[i][0])
-#     y1 = int(lines[i][1])
-#     x2 = int(lines[i][2])
-#     y2 = int(lines[i][3])
-#     cv2.line(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
+# # for i in range(N):
+# #     x1 = int(lines[i][0])
+# #     y1 = int(lines[i][1])
+# #     x2 = int(lines[i][2])
+# #     y2 = int(lines[i][3])
+# #     cv2.line(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
 # cv2.imshow('old lines', draw_lines(old_lines_image, old_lines))
-# cv2.imshow('lines', image)
+# cv2.imshow('lines', draw_lines(image, lines))
 # cv2.waitKey()

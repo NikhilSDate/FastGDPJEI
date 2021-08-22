@@ -4,6 +4,7 @@ from diagram_parser.text_detector import remove_text
 import matplotlib.pyplot as plt
 import math
 from sklearn.cluster import DBSCAN, MeanShift
+from diagram_parser.params import Params
 
 
 def resize(image, final_larger_dim, interpolation=cv2.INTER_LINEAR):
@@ -21,20 +22,28 @@ def preprocess(image):
     return blur
 
 
+def run_hough_trial(image, param2, min_radius):
+    param_1 = Params.params["hough_circles_param_1"]
+
+    trial_circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT, 1.5, 1,
+                                     param_1, param2=param2, minRadius=min_radius,
+                                     maxRadius=int((image.shape[0] + image.shape[1]) / 4))
+    return trial_circles
+
+
 def get_best_params(image, objective_function):
     trial_results = []
     x = []
     y = []
     circle_counts = []
     max_circles = 0
-    for param2 in range(1, 100, 2):
-        for min_radius in range(0, int((image.shape[0] + image.shape[1])/ 4), 2):
-            circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT, 1.5, 1,
-                                       param1=50, param2=param2, minRadius=min_radius,
-                                       maxRadius=int((image.shape[0] + image.shape[1])/ 4))
-            if circles is not None:
-                num_circles = circles.shape[1]
+    param_2_range = Params.params["hough_circles_param_2_range"]
+    for param2 in range(param_2_range[0], param_2_range[1], 2):
+        for min_radius in range(0, int((image.shape[0] + image.shape[1]) / 4), 2):
+            trial_circles = run_hough_trial(image, param2, min_radius)
 
+            if trial_circles is not None and not np.array_equal(trial_circles, [[50], [0], [0], [0]]):
+                num_circles = trial_circles.shape[1]
                 trial_results.append((param2, min_radius, num_circles))
                 circle_counts.append(num_circles)
                 x.append(param2)
@@ -48,9 +57,11 @@ def get_best_params(image, objective_function):
                 x.append(param2)
                 y.append(min_radius)
                 circle_counts.append(0)
-    comparator = lambda trial: objective_function(*trial, 100, int((image.shape[0] + image.shape[1])/ 4), max_circles)
+    # PARAM: hough_circles_max_param_2
+    comparator = lambda trial: objective_function(*trial, param_2_range[1], int((image.shape[0] + image.shape[1]) / 4), max_circles)
     sorted_results = sorted(trial_results, key=comparator)
     params = sorted_results[-1]
+
     return params
 
 
@@ -73,11 +84,17 @@ def objective_function(param2, min_radius, num_circles, max_param_2, max_radius,
     if num_circles == 0:
         return 0
     else:
-        param2_term = 1 - math.exp(-5 * (param2 / max_param_2))
+        # PARAM: hough_circles_objective_function_param_2_term_shape
+        param_2_term_shape = Params.params['circle_detector_objective_function_param_2_term_shape']
+        param2_term = 1 - math.exp(-param_2_term_shape * (param2 / max_param_2))
         min_radius_term = math.exp((-(min_radius / max_radius) ** 2))
-        min_radius_term = 1 - (1.25 * (min_radius / max_radius - 0.2) ** 2)
-        num_circles_term = 1 - math.exp(-5*math.pow(num_circles/max_circles, 1/4))
-        return param2_term + 0.5*min_radius_term
+        # PARAM: hough_circles_objective_function_min_radius_term_shape
+        min_radius_term_shape = Params.params['circle_detector_objective_function_min_radius_term_shape']
+        min_radius_term = 1 - (min_radius_term_shape[0] * (min_radius / max_radius - min_radius_term_shape[1]) ** 2)
+        num_circles_term = 1 - math.exp(-5 * math.pow(num_circles / max_circles, 1 / 4))
+        # PARAM: hough_circles_param_2_weight
+        min_radius_weight = Params.params['circle_detector_min_radius_weight']
+        return param2_term + min_radius_weight * min_radius_term
 
 
 def show_circles(image, circles):
@@ -91,7 +108,9 @@ def show_circles(image, circles):
 
 def clustering_filter(circles, image_size):
     circle_centers = [(circle[0], circle[1]) for circle in circles[0]]
-    clustering = DBSCAN(eps=0.05 * (image_size[0] + image_size[1]), min_samples=1).fit(circle_centers)
+    # PARAM: hough_circles_clustering_epsilon(/2)
+    eps = Params.params['circle_detector_clustering_epsilon']
+    clustering = DBSCAN(eps=eps * (image_size[0] + image_size[1])/2, min_samples=1).fit(circle_centers)
     clusters = dict()
     filtered_circles = []
     for idx, label in enumerate(clustering.labels_):
@@ -111,11 +130,13 @@ def detect_circles(image):
     best_params = get_best_params(image, objective_function=objective_function)
     # TODO: MAYBE USE A MORE SOPHISTICATED WAY OF DETERMINING IF THE IMAGE CONTAINS CIRCLES. POSSIBLY OPTIMIZE
     #  THRESHOLD BY USING the area under the ROC
-    if best_params[0] > 70:
+    # PARAM: hough_circles_is_a_circle_threshold
+    is_a_circle = Params.params['circle_detector_is_a_circle_threshold']
+    if best_params[0] > is_a_circle:
 
         best_circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT,
                                         1.5, 1, param1=50, param2=best_params[0],
-                                        minRadius=best_params[1], maxRadius=int((image.shape[0] + image.shape[1])/ 4))
+                                        minRadius=best_params[1], maxRadius=int((image.shape[0] + image.shape[1]) / 4))
         filtered_circles = clustering_filter(best_circles, image.shape)
         if filtered_circles is not None:
             return filtered_circles
@@ -123,12 +144,12 @@ def detect_circles(image):
             return np.array([])
     else:
         return np.array([])
+
 #
-# img = cv2.imread('test_images/concentric_circles.png')
+# img = cv2.imread('../aaai/000.png')
 # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 # circles = detect_circles(gray)
 # if circles is not None:
-#     print(circles)
 #     show_circles(img, circles.astype(np.uint16))
 
 
@@ -162,6 +183,8 @@ def filter_circles(circles):
         if not suppress:
             strong_circles.append(circle)
     return np.array([strong_circles])
+
+
 def circles_close_enough(circle1, circle2):
     total_radius = circle1[2] + circle2[2]
     circle_coords = np.array([circle1[0], circle1[1]])
