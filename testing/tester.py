@@ -134,10 +134,8 @@ def run_test():
             precision = total_relevant_properties / total_predicted_properties
             recall = total_relevant_properties / total_ground_truth_properties
             diagram_score = f1_score(interpretation, lines, circles, predicted_interpretation, predicted_lines, predicted_circles)[3]
-            print(diagram_score)
             f1_scores.append(diagram_score)
     total_precision = total_relevant_properties/total_predicted_properties
     total_recall = total_relevant_properties/total_ground_truth_properties
 
     return f1_scores, total_precision, total_recall
-print(run_test())
