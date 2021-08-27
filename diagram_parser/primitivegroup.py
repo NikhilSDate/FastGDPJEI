@@ -59,7 +59,12 @@ class PrimitiveGroup:
             print('only text')
             penalty += 10000
         return penalty
-    def weight(self):
+    def weight(self, offset=0):
+        '''
+        calculates score for this primitivegroup (higher is better)
+        :param offset: neutral point.
+        :return:
+        '''
         weight = 0
         if self.contains('i'):
             i_centroid = self.centroid('i')
@@ -70,7 +75,7 @@ class PrimitiveGroup:
             for text_coord in self.coord_list('t', labels_only=True):
                 weight += np.linalg.norm(text_coord - c_centroid)
         weight = weight / len(self.coord_list('t'))
-        return math.exp(-weight)
+        return offset-weight
     def __str__(self):
         return f'PrimitiveGroup({self.primitives})'
     def __repr__(self):

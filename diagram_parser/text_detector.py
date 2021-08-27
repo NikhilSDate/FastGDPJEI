@@ -91,7 +91,7 @@ def text_components_with_centroids(image):
         # TODO: IMPLEMENT SMARTER METHOD FOR FIGURING OUT IF THE BLOB CONTAINS TEXT OR NOT
         low = Params.params['text_detector_is_text_blob_low_thresh']
         high = Params.params['text_detector_is_text_blob_high_thresh']
-        if 20 < stat[2]*stat[3] <= (0.01 * image.shape[0] * image.shape[1]):
+        if low < stat[2]*stat[3] <= (high * image.shape[0] * image.shape[1]):
             points = []
             for y in range(stat[1], stat[1] + stat[3]):
                 for x in range(stat[0], stat[0] + stat[2]):

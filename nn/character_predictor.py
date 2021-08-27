@@ -3,9 +3,12 @@ import string
 import cv2.cv2 as cv2
 import numpy as np
 import tensorflow as tf
+import os
 class CharacterPredictor():
 
+
     def __init__(self, model_path='../nn/bayes_optimized_character_model.h5'):
+
         self.model = models.load_model(model_path)
         self.labels = dict()
         valid_characters = list(string.digits)+list(string.ascii_uppercase)+list(string.ascii_lowercase)

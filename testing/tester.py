@@ -29,7 +29,7 @@ def f1_score(ground_truth_interpretation, ground_truth_lines, ground_truth_circl
         for idx2, point2 in enumerate(predicted_interpretation):
             if not matched_points[idx2] and distance(point1.coords,
                                                      point2.coords) < DISTANCE_THRESHOLD and labels_match(
-                    point1.labels[0], point2.labels[0]):
+                point1.labels[0], point2.labels[0]):
                 matched_points[idx2] = True
                 point_match[idx1] = idx2
     line_and_circle_match = dict()
@@ -59,12 +59,15 @@ def f1_score(ground_truth_interpretation, ground_truth_lines, ground_truth_circl
                         num_relevant_properties += 1
     precision = num_relevant_properties / predicted_interpretation.total_properties()
     recall = num_relevant_properties / ground_truth_interpretation.total_properties()
-    f1 = 2 * precision * recall / (precision + recall)
+    try:
+        f1 = 2 * precision * recall / (precision + recall)
+    except ZeroDivisionError:
+        f1 = 0
     return num_relevant_properties, predicted_interpretation.total_properties(), ground_truth_interpretation.total_properties(), f1
 
 
 def parse_annotations():
-    tree = ET.parse('../aaai/annotations.xml')
+    tree = ET.parse('../validation/annotations.xml')
     for child in tree.getroot():
         if child.tag == 'image':
             file_name = child.attrib['name']
@@ -110,32 +113,41 @@ def parse_annotations():
             yield file_name, diagram_interpretation, ground_truth_lines, processed_circles
 
 
-
 def run_test():
-
     total_relevant_properties = 0
     total_predicted_properties = 0
     total_ground_truth_properties = 0
     f1_scores = []
+    count = 0
     for file_name, interpretation, lines, circles in parse_annotations():
-
-        # print(file_name)
-        # print(interpretation)
-
         if interpretation.total_properties() > 0:
-            diagram_image = cv2.imread(f'../aaai/{file_name}')
+            diagram_image = cv2.imread(f'../validation/images/{file_name}')
             print(file_name)
+            # resize image if it is too big
+            max_dimension = max(diagram_image.shape[0], diagram_image.shape[1])
+            if max_dimension > 300:
+                factor = 300/max_dimension
+                diagram_image = cv2.resize(diagram_image, (0, 0), fx=factor, fy=factor)
+
+
             predicted_interpretation, predicted_lines, predicted_circles = parse_diagran(diagram_image)
             # print(predicted_interpretation)
-            f1_info = f1_score(interpretation, lines, circles, predicted_interpretation, predicted_lines, predicted_circles)
+            f1_info = f1_score(interpretation, lines, circles, predicted_interpretation, predicted_lines,
+                               predicted_circles)
             total_relevant_properties += f1_info[0]
             total_predicted_properties += f1_info[1]
             total_ground_truth_properties += f1_info[2]
             precision = total_relevant_properties / total_predicted_properties
             recall = total_relevant_properties / total_ground_truth_properties
-            diagram_score = f1_score(interpretation, lines, circles, predicted_interpretation, predicted_lines, predicted_circles)[3]
+            diagram_score = \
+                f1_score(interpretation, lines, circles, predicted_interpretation, predicted_lines, predicted_circles)[
+                    3]
+            print(diagram_score)
             f1_scores.append(diagram_score)
-    total_precision = total_relevant_properties/total_predicted_properties
-    total_recall = total_relevant_properties/total_ground_truth_properties
+            count += 1
+        print(f'Files done: {count} \r', end='')
+
+    total_precision = total_relevant_properties / total_predicted_properties
+    total_recall = total_relevant_properties / total_ground_truth_properties
 
     return f1_scores, total_precision, total_recall

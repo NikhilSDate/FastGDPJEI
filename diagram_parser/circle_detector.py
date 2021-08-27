@@ -39,6 +39,7 @@ def get_best_params(image, objective_function):
     max_circles = 0
     param_2_range = Params.params["hough_circles_param_2_range"]
     for param2 in range(param_2_range[0], param_2_range[1], 2):
+        print(param2)
         for min_radius in range(0, int((image.shape[0] + image.shape[1]) / 4), 2):
             trial_circles = run_hough_trial(image, param2, min_radius)
 
@@ -86,11 +87,11 @@ def objective_function(param2, min_radius, num_circles, max_param_2, max_radius,
     else:
         # PARAM: hough_circles_objective_function_param_2_term_shape
         param_2_term_shape = Params.params['circle_detector_objective_function_param_2_term_shape']
-        param2_term = 1 - math.exp(-param_2_term_shape * (param2 / max_param_2))
+        param2_term = (1 - math.exp(-param_2_term_shape * (param2 / max_param_2)))/(1-math.exp(-param_2_term_shape))
         min_radius_term = math.exp((-(min_radius / max_radius) ** 2))
         # PARAM: hough_circles_objective_function_min_radius_term_shape
         min_radius_term_shape = Params.params['circle_detector_objective_function_min_radius_term_shape']
-        min_radius_term = 1 - (min_radius_term_shape[0] * (min_radius / max_radius - min_radius_term_shape[1]) ** 2)
+        min_radius_term = (1 - (min_radius_term_shape[0] * (min_radius / max_radius - min_radius_term_shape[1]) ** 2))
         num_circles_term = 1 - math.exp(-5 * math.pow(num_circles / max_circles, 1 / 4))
         # PARAM: hough_circles_param_2_weight
         min_radius_weight = Params.params['circle_detector_min_radius_weight']
@@ -137,7 +138,12 @@ def detect_circles(image):
         best_circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT,
                                         1.5, 1, param1=50, param2=best_params[0],
                                         minRadius=best_params[1], maxRadius=int((image.shape[0] + image.shape[1]) / 4))
-        filtered_circles = clustering_filter(best_circles, image.shape)
+        # this code is there to catch a weird error
+        if best_circles is not None:
+
+            filtered_circles = clustering_filter(best_circles, image.shape)
+        else:
+            filtered_circles = None
         if filtered_circles is not None:
             return filtered_circles
         else:
@@ -145,8 +151,8 @@ def detect_circles(image):
     else:
         return np.array([])
 
-#
-# img = cv2.imread('../aaai/000.png')
+
+# img = cv2.imread('../aaai/007.png')
 # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 # circles = detect_circles(gray)
 # if circles is not None:

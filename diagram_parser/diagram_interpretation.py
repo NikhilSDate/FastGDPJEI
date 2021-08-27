@@ -36,4 +36,10 @@ class Interpretation:
         pass
     def __getitem__(self, item):
         return self.points[item]
+    def rescale_coords(self, scale_factor):
+        '''
+        scales all coords in the diagram interpretation by scale_factor. (used when)
+        :param scale_factor:
+        :return:
+        '''
 

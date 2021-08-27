@@ -48,11 +48,11 @@ class SearchNode:
                 children.append(child1)
         return children
 
-    def fitness(self):
+    def fitness(self, weight_offset=0):
         fitness = 0
         for point in self.points:
             if point.contains('t'):
-                fitness += point.weight()
+                fitness += point.weight(weight_offset)
         for info_label in self.info_labels:
             fitness += info_label.weight(self.points, self.lines, self.point_projections)
         return fitness

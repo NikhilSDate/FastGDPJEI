@@ -308,8 +308,8 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
     primitive_list = [primitive.coords for primitive in primitives]
     character_predictor = CharacterPredictor()
     # PARAM diagram_graph_builder_clustering_eps
-    eps = Params.params['diagram_graph_builder_dbscan_eps']
-    clustering = DBSCAN(eps=eps * (image_shape[0] + image_shape[1]) / 2, min_samples=1).fit(primitive_list)
+    dbscan_eps = Params.params['diagram_graph_builder_dbscan_eps']
+    clustering = DBSCAN(eps=dbscan_eps * (image_shape[0] + image_shape[1]) / 2, min_samples=1).fit(primitive_list)
     cluster_list = []
     num_clusters = max(clustering.labels_) + 1
     for _ in range(num_clusters):
@@ -325,15 +325,18 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
         else:
             numbers.append(Primitive(coords, 't', idx, is_letter=is_letter))
         primitives.append(Primitive(coords, 't', idx, is_letter=is_letter))
+
     search_queue = Queue()
     search_queue.put(SearchNode(primitives, lines, cluster_list))
     best_child = SearchNode(primitives, lines, cluster_list)
+    offset_factor = Params.params['primitive_group_weight_offset_factor']
+
     while search_queue and letters:
         node = search_queue.get()
         if node.level >= len(letters):
             break
         children = node.generate_children(letters[node.level])
-        sorted_children = sorted(children, key=lambda x: x.fitness())
+        sorted_children = sorted(children, key=lambda x: x.fitness(weight_offset=offset_factor*(image_shape[0]+image_shape[1])/2))
         best_child = sorted_children[-1]
 
         if len(sorted_children) < 1:
@@ -409,11 +412,11 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
     diagram_interpretation.set_info_labels(best_child_with_numbers.info_labels)
 
     return diagram_interpretation
-    # for idx, cluster in enumerate(primitive_list):
-    #     hue = 179 * clustering.labels_[idx] / num_clusters
-    #     hsv = np.uint8([[[hue, 255, 255]]])
-    #     rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]
-    #     cv2.circle(image, (int(cluster[0]), int(cluster[1])), 2, rgb.tolist(), thickness=-1)
+    for idx, cluster in enumerate(primitive_list):
+        hue = 179 * clustering.labels_[idx] / num_clusters
+        hsv = np.uint8([[[hue, 255, 255]]])
+        rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]
+        cv2.circle(image, (int(cluster[0]), int(cluster[1])), 2, rgb.tolist(), thickness=-1)
 
 
 def get_point_projections(lines, primitive_groups, interpretation):
@@ -457,6 +460,7 @@ def find_sk_line(hesse_line):
 
     return skobj.Line(point, direction)
 
-#
-# image = cv2.imread('../aaai/000.png')
-# print(parse_diagran(image))
+
+image = cv2.imread('../validation/images/0006.png')
+image = cv2.resize(image, (0, 0), fx=0.5, fy=0.5)
+print(parse_diagran(image))
