@@ -1,8 +1,7 @@
 from testing.tester import run_test
-from hyperopt import hp, fmin, tpe, STATUS_OK, Trials, plotting
-from diagram_parser.params import Params
+from hyperopt import hp, fmin, tpe
+from testing.params import Params
 import pickle
-import os
 import tensorflow as tf
 import numpy as np
 
@@ -40,14 +39,17 @@ def run_trial():
     space['text_detector_is_text_blob_low_thresh'] = hp.uniform('text_detector_is_text_blob_low_thresh', 10, 100)
     space['text_detector_is_text_blob_high_thresh'] = hp.uniform('text_detector_is_text_blob_high_thresh', 0.005, 0.1)
     space['diagram_graph_builder_dbscan_eps'] = hp.uniform('diagram_graph_builder_dbscan_eps', 0.01, 0.2)
-
-    with open('optimization_part_4.pickle', 'rb') as f:
+    baseline = objective({})
+    print(f'baseline{baseline}')
+    with open('optimization_part_5.pickle', 'rb') as f:
         trials = pickle.load(f)
-    best = fmin(objective, space, algo=tpe.suggest, max_evals=60, trials=trials)
+    best = fmin(objective, space, algo=tpe.suggest, max_evals=80, trials=trials)
     best['circle_detector_is_a_circle_threshold']+=25
     best['line_detector_mode'] = 'hough_p_hesse'
-    Params.update_params(best)
-    print(run_test())
+    with_optimization = objective(best)
+    print(f'with_optimization{with_optimization}')
+    # Params.update_params(best)
+    # print(run_test())
     # with open('optimization_part_5.pickle', 'wb') as f:
     #     pickle.dump(trials, f)
 run_trial()

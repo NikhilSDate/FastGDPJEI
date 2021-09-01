@@ -1,8 +1,8 @@
 import cv2.cv2 as cv2
 import numpy as np
-from utils.tools import freedman_diaconis_bins, otsus_threshold
+from utils.tools import otsus_threshold
 from numpy import cos, sin
-from diagram_parser.params import Params
+from testing.params import Params
 
 
 def preprocess(image):

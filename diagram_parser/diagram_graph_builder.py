@@ -7,7 +7,6 @@ import numpy as np
 from math import sin, cos, sqrt
 import itertools
 import networkx as nx
-from collections import OrderedDict
 from nn.character_predictor import CharacterPredictor
 from diagram_parser.searchnode import SearchNode
 from diagram_parser.primitive import Primitive
@@ -15,10 +14,10 @@ from diagram_parser.primitivegroup import PrimitiveGroup
 from diagram_parser.diagram_interpretation import Interpretation
 from diagram_parser.point import Point
 from queue import Queue
-from sklearn.cluster import AgglomerativeClustering, DBSCAN
+from sklearn.cluster import DBSCAN
 import sympy as sp
 import skspatial.objects as skobj
-from diagram_parser.params import Params
+from testing.params import Params
 
 
 def is_pair_consistent(pairs, pair):
@@ -289,7 +288,10 @@ def parse_diagran(diagram_image):
         line_dict[f'l{idx}'] = line
     for idx, circle in enumerate(circles):
         circle_dict[f'c{idx}'] = circle
-    return build_interpretation(primitives, lines, circles, intersections, text_regions, diagram_image.shape, diagram_image), line_dict, circle_dict
+    interpretation = build_interpretation(primitives, lines, circles, intersections, text_regions, diagram_image.shape)
+    interpretation.set_lines(line_dict)
+    interpretation.set_circles(circle_dict)
+    return interpretation, line_dict, circle_dict
 
 
 # for idx, coords in enumerate(text_regions.keys()):
@@ -304,7 +306,7 @@ def average_distance(point, points):
     return distance
 
 
-def build_interpretation(primitives, lines, circles, intersections, text_regions, image_shape, image):
+def build_interpretation(primitives, lines, circles, intersections, text_regions, image_shape):
     primitive_list = [primitive.coords for primitive in primitives]
     character_predictor = CharacterPredictor()
     # PARAM diagram_graph_builder_clustering_eps
@@ -410,7 +412,7 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
             for child in sorted_children[-1:]:
                 number_search_queue.put(child)
     diagram_interpretation.set_info_labels(best_child_with_numbers.info_labels)
-
+    diagram_interpretation.set_lines(lines)
     return diagram_interpretation
     for idx, cluster in enumerate(primitive_list):
         hue = 179 * clustering.labels_[idx] / num_clusters
@@ -459,8 +461,3 @@ def find_sk_line(hesse_line):
         direction = (cos(theta), sin(theta))
 
     return skobj.Line(point, direction)
-
-
-image = cv2.imread('../validation/images/0006.png')
-image = cv2.resize(image, (0, 0), fx=0.5, fy=0.5)
-print(parse_diagran(image))

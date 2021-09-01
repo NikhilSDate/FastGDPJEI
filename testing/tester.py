@@ -2,10 +2,12 @@ from diagram_parser.diagram_interpretation import Interpretation
 from diagram_parser.line_detecter import close_enough, hesse_normal_form
 from diagram_parser.point import Point
 from diagram_parser.circle_detector import circles_close_enough
+from testing.params import Params
 import numpy as np
 import xml.etree.ElementTree as ET
 from diagram_parser.diagram_graph_builder import parse_diagran
 import cv2.cv2 as cv2
+
 
 
 def distance(point1_coords, point2_coords):
@@ -67,7 +69,7 @@ def f1_score(ground_truth_interpretation, ground_truth_lines, ground_truth_circl
 
 
 def parse_annotations():
-    tree = ET.parse('../validation/annotations.xml')
+    tree = ET.parse('../aaai/annotations_2.xml')
     for child in tree.getroot():
         if child.tag == 'image':
             file_name = child.attrib['name']
@@ -99,7 +101,7 @@ def parse_annotations():
                     line_points = annotation.attrib['points'].split(';')
                     point1 = [float(coord) for coord in line_points[0].split(',')]
                     point2 = [float(coord) for coord in line_points[1].split(',')]
-                    ground_truth_lines[annotation[0].text] = (point1, point2)
+                    ground_truth_lines[annotation[0].text] = np.array((point1, point2))
                 elif annotation.attrib['label'] == 'Circle':
                     circle_points = annotation.attrib['points'].split(';')
                     point1 = [float(coord) for coord in circle_points[0].split(',')]
@@ -109,7 +111,9 @@ def parse_annotations():
             for key, circle in ground_truth_circles.items():
                 center = circle[0]
                 radius = np.linalg.norm(np.subtract(circle[1], circle[0]))
-                processed_circles[key] = (*center, radius)
+                processed_circles[key] = np.array((*center, radius))
+            diagram_interpretation.set_lines(ground_truth_lines)
+            diagram_interpretation.set_circles(ground_truth_circles)
             yield file_name, diagram_interpretation, ground_truth_lines, processed_circles
 
 
@@ -121,15 +125,8 @@ def run_test():
     count = 0
     for file_name, interpretation, lines, circles in parse_annotations():
         if interpretation.total_properties() > 0:
-            diagram_image = cv2.imread(f'../validation/images/{file_name}')
-            print(file_name)
-            # resize image if it is too big
-            max_dimension = max(diagram_image.shape[0], diagram_image.shape[1])
-            if max_dimension > 300:
-                factor = 300/max_dimension
-                diagram_image = cv2.resize(diagram_image, (0, 0), fx=factor, fy=factor)
 
-
+            diagram_image = cv2.imread(f'../aaai/{file_name}')
             predicted_interpretation, predicted_lines, predicted_circles = parse_diagran(diagram_image)
             # print(predicted_interpretation)
             f1_info = f1_score(interpretation, lines, circles, predicted_interpretation, predicted_lines,
@@ -137,16 +134,14 @@ def run_test():
             total_relevant_properties += f1_info[0]
             total_predicted_properties += f1_info[1]
             total_ground_truth_properties += f1_info[2]
-            precision = total_relevant_properties / total_predicted_properties
-            recall = total_relevant_properties / total_ground_truth_properties
             diagram_score = \
                 f1_score(interpretation, lines, circles, predicted_interpretation, predicted_lines, predicted_circles)[
                     3]
-            print(diagram_score)
             f1_scores.append(diagram_score)
             count += 1
-        print(f'Files done: {count} \r', end='')
-
+            print(f'files done:{count}')
+            if file_name == '042.png':
+                break
     total_precision = total_relevant_properties / total_predicted_properties
     total_recall = total_relevant_properties / total_ground_truth_properties
 

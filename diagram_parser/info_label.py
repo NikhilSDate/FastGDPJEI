@@ -12,6 +12,8 @@ class InfoLabel:
         self.boundary_points = []
     def coords(self):
         return self.label.coords
+    def set_coords(self, coords):
+        self.label.coords = coords
 
     def weight(self, primitive_groups, lines, point_projections):
         if self.type == 'l':

@@ -5,11 +5,9 @@
 # organizing imports
 import cv2.cv2 as cv2
 import numpy as np
-from utils.tools import freedman_diaconis_bins, otsus_threshold
-import matplotlib.pyplot as plt
 from diagram_parser.text_detector import remove_text
-from diagram_parser.text_detector import connected_components_and_threshold, imshow_components
-from diagram_parser.params import Params
+from diagram_parser.text_detector import connected_components_and_threshold
+from testing.params import Params
 
 
 def distance(x1, y1, x2, y2):

@@ -1,10 +1,8 @@
 import cv2.cv2 as cv2
 import numpy as np
-from diagram_parser.text_detector import remove_text
-import matplotlib.pyplot as plt
 import math
-from sklearn.cluster import DBSCAN, MeanShift
-from diagram_parser.params import Params
+from sklearn.cluster import DBSCAN
+from testing.params import Params
 
 
 def resize(image, final_larger_dim, interpolation=cv2.INTER_LINEAR):
@@ -14,7 +12,6 @@ def resize(image, final_larger_dim, interpolation=cv2.INTER_LINEAR):
 
 
 def preprocess(image):
-    # TODO:RESIZE IMAGE TO IDEAL SIZE
     # foreground is black so erode instead of dilating
     kernel = np.ones((2, 2), np.uint8)
     eroded = cv2.erode(image, kernel, iterations=1)
@@ -39,7 +36,6 @@ def get_best_params(image, objective_function):
     max_circles = 0
     param_2_range = Params.params["hough_circles_param_2_range"]
     for param2 in range(param_2_range[0], param_2_range[1], 2):
-        print(param2)
         for min_radius in range(0, int((image.shape[0] + image.shape[1]) / 4), 2):
             trial_circles = run_hough_trial(image, param2, min_radius)
 
@@ -128,6 +124,14 @@ def clustering_filter(circles, image_size):
 
 def detect_circles(image):
     image = preprocess(image)
+    max_dimension = max(image.shape[0], image.shape[1])
+    resize_image = Params.params['resize_image_if_too_big']
+
+    if max_dimension > 250 and resize_image:
+        factor = 250 / max_dimension
+        image = cv2.resize(image, (0, 0), fx=factor, fy=factor)
+    else:
+        factor = 1
     best_params = get_best_params(image, objective_function=objective_function)
     # TODO: MAYBE USE A MORE SOPHISTICATED WAY OF DETERMINING IF THE IMAGE CONTAINS CIRCLES. POSSIBLY OPTIMIZE
     #  THRESHOLD BY USING the area under the ROC
@@ -138,21 +142,21 @@ def detect_circles(image):
         best_circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT,
                                         1.5, 1, param1=50, param2=best_params[0],
                                         minRadius=best_params[1], maxRadius=int((image.shape[0] + image.shape[1]) / 4))
-        # this code is there to catch a weird error
+        # this code is here to catch a weird error
         if best_circles is not None:
 
             filtered_circles = clustering_filter(best_circles, image.shape)
         else:
             filtered_circles = None
         if filtered_circles is not None:
-            return filtered_circles
+            return np.multiply(filtered_circles, 1/factor)
         else:
             return np.array([])
     else:
         return np.array([])
 
 
-# img = cv2.imread('../aaai/007.png')
+# img = cv2.imread('../validation/images/0004.png')
 # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 # circles = detect_circles(gray)
 # if circles is not None:

@@ -17,3 +17,6 @@ class Point():
         return self.__str__()
     def num_properties(self):
         return len(self.properties)
+    def scale_coords(self, scale_factor):
+
+        self.coords = [self.coords[0]*scale_factor, self.coords[1]*scale_factor]

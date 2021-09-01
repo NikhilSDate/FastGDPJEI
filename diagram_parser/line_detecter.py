@@ -1,9 +1,10 @@
 import cv2.cv2 as cv2
 import numpy as np
-from diagram_parser.params import Params
-import matplotlib.pyplot as plt
-from numpy import cos, sin, arctan2
+from testing.params import Params
+from numpy import arctan2
 from math import sqrt
+
+from diagram_parser.text_detector import remove_text
 
 
 def preprocess(img):
@@ -159,7 +160,10 @@ def get_hough_lines_p(img):
     rho, theta, thresh, minLineLength, maxLineGap = Params.params['line_detector_hough_p_params']
 
     lines = cv2.HoughLinesP(edges, rho=rho, theta=theta, threshold=thresh, minLineLength=minLineLength, maxLineGap=maxLineGap)
-    lines = [line[0] for line in lines]
+    if lines is not None:
+        lines = [line[0] for line in lines]
+    else:
+        lines = []
     return lines
 
 
@@ -195,27 +199,31 @@ def get_filtered_lines(img):
             filtered_lines = filter_lines(hough_lines, img.shape)
             return filtered_lines
     elif mode == 'hough_p_hesse':
+        resize_image = Params.params['resize_image_if_too_big']
+        max_dimension = max(img.shape[0], img.shape[1])
+        if max_dimension > 250 and resize_image:
+            factor = 250/max_dimension
+            img = cv2.resize(img, (0, 0), fx=factor, fy=factor)
+
+        else:
+            factor = 1
         hough_lines_p = get_hough_lines_p(img)
+        hough_lines_p = np.multiply(hough_lines_p, 1 / factor)
         if hough_lines_p is None:
             return np.array([])
         else:
             filtered_lines = filter_lines_p(hough_lines_p, img.shape)
             hesse_lines = [np.array(hesse_normal_form(endpoints_line)) for endpoints_line in filtered_lines]
             return hesse_lines
-#
-# #
-# image = cv2.imread('../textbooks/0030_copy.png')
+# image = cv2.imread('../textbooks/0004.png')
 # filtered_image = remove_text(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
-# old_lines_image = image.copy()
-# lines = get_filtered_lines(image, mode='hough_p_hesse')
-# old_lines = get_filtered_lines(filtered_image)
+# lines = get_filtered_lines(image)
 # N = len(lines)
-# # for i in range(N):
-# #     x1 = int(lines[i][0])
-# #     y1 = int(lines[i][1])
-# #     x2 = int(lines[i][2])
-# #     y2 = int(lines[i][3])
-# #     cv2.line(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
-# cv2.imshow('old lines', draw_lines(old_lines_image, old_lines))
+# for i in range(N):
+#     x1 = int(lines[i][0])
+#     y1 = int(lines[i][1])
+#     x2 = int(lines[i][2])
+#     y2 = int(lines[i][3])
+#     cv2.line(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
 # cv2.imshow('lines', draw_lines(image, lines))
 # cv2.waitKey()

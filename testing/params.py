@@ -20,7 +20,8 @@ class Params:
               "corner_harris_params": (2, 3, 0.04),
               "corner_detector_is_corner_threshold": 0.04,
               "diagram_graph_builder_dbscan_eps": 0.05,
-              "primitive_group_weight_offset_factor":0.1
+              "primitive_group_weight_offset_factor":0.1,
+              'resize_image_if_too_big':True
               }
 
     @classmethod
