@@ -7,7 +7,7 @@ import os
 class CharacterPredictor():
 
 
-    def __init__(self, model_path='../nn/bayes_optimized_character_model.h5'):
+    def __init__(self, model_path='../nn/models/bayes_optimized_character_model.h5'):
 
         self.model = models.load_model(model_path)
         self.labels = dict()

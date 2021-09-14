@@ -2,7 +2,7 @@ import cv2.cv2 as cv2
 import numpy as np
 from utils.tools import otsus_threshold
 from numpy import cos, sin
-from testing.params import Params
+from experiments.params import Params
 
 
 def preprocess(image):

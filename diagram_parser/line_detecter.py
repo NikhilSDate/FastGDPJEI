@@ -1,6 +1,6 @@
 import cv2.cv2 as cv2
 import numpy as np
-from testing.params import Params
+from experiments.params import Params
 from numpy import arctan2
 from math import sqrt
 
@@ -127,7 +127,25 @@ def close_enough(line1, line2, image_size):
     # PARAM line_detector_close_enough_rho_threshold
     angle_thresh = Params.params['line_detector_close_enough_angle_threshold']
     rho_thresh = Params.params['line_detector_close_enough_rho_threshold']
-    if angle_difference < 0.1 and rho_difference < 0.075 * (image_size[0] + image_size[1]) / 2:
+    if angle_difference < angle_thresh and rho_difference < rho_thresh * (image_size[0] + image_size[1]) / 2:
+        return True
+    return False
+def match_close_enough(line1, line2, image_size):
+    rho1, theta1 = convert_to_positive(line1)
+    rho2, theta2 = convert_to_positive(line2)
+    angle_difference = abs(theta1 - theta2)
+    if angle_difference < np.pi / 2:
+        pass
+    elif np.pi / 2 < angle_difference <= np.pi:
+        angle_difference = np.pi - angle_difference
+    elif np.pi <= angle_difference <= 3 * np.pi / 2:
+        angle_difference = angle_difference - np.pi
+    elif 3 * np.pi / 2 <= angle_difference < 2 * np.pi:
+        angle_difference = 2 * np.pi - angle_difference
+    rho_difference = abs(rho1 - rho2)
+    # TESTING_PARAM line_detector_close_enough_angle_threshold
+    # TESTING_PARAM line_detector_close_enough_rho_threshold
+    if angle_difference < 0.1 and rho_difference < 0.05 * (image_size[0] + image_size[1]) / 2:
         return True
     return False
 def close_enough_p(line1, line2, image_size):
@@ -215,15 +233,10 @@ def get_filtered_lines(img):
             filtered_lines = filter_lines_p(hough_lines_p, img.shape)
             hesse_lines = [np.array(hesse_normal_form(endpoints_line)) for endpoints_line in filtered_lines]
             return hesse_lines
-# image = cv2.imread('../textbooks/0004.png')
+# image = cv2.imread('../textbooks/0035.png')
 # filtered_image = remove_text(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
 # lines = get_filtered_lines(image)
+# print(lines)
 # N = len(lines)
-# for i in range(N):
-#     x1 = int(lines[i][0])
-#     y1 = int(lines[i][1])
-#     x2 = int(lines[i][2])
-#     y2 = int(lines[i][3])
-#     cv2.line(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
 # cv2.imshow('lines', draw_lines(image, lines))
 # cv2.waitKey()

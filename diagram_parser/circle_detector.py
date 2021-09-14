@@ -1,8 +1,9 @@
 import cv2.cv2 as cv2
 import numpy as np
 import math
+from math import acos, sin, pi
 from sklearn.cluster import DBSCAN
-from testing.params import Params
+from experiments.params import Params
 
 
 def resize(image, final_larger_dim, interpolation=cv2.INTER_LINEAR):
@@ -55,7 +56,8 @@ def get_best_params(image, objective_function):
                 y.append(min_radius)
                 circle_counts.append(0)
     # PARAM: hough_circles_max_param_2
-    comparator = lambda trial: objective_function(*trial, param_2_range[1], int((image.shape[0] + image.shape[1]) / 4), max_circles)
+    comparator = lambda trial: objective_function(*trial, param_2_range[1], int((image.shape[0] + image.shape[1]) / 4),
+                                                  max_circles)
     sorted_results = sorted(trial_results, key=comparator)
     params = sorted_results[-1]
 
@@ -83,7 +85,7 @@ def objective_function(param2, min_radius, num_circles, max_param_2, max_radius,
     else:
         # PARAM: hough_circles_objective_function_param_2_term_shape
         param_2_term_shape = Params.params['circle_detector_objective_function_param_2_term_shape']
-        param2_term = (1 - math.exp(-param_2_term_shape * (param2 / max_param_2)))/(1-math.exp(-param_2_term_shape))
+        param2_term = (1 - math.exp(-param_2_term_shape * (param2 / max_param_2))) / (1 - math.exp(-param_2_term_shape))
         min_radius_term = math.exp((-(min_radius / max_radius) ** 2))
         # PARAM: hough_circles_objective_function_min_radius_term_shape
         min_radius_term_shape = Params.params['circle_detector_objective_function_min_radius_term_shape']
@@ -107,7 +109,7 @@ def clustering_filter(circles, image_size):
     circle_centers = [(circle[0], circle[1]) for circle in circles[0]]
     # PARAM: hough_circles_clustering_epsilon(/2)
     eps = Params.params['circle_detector_clustering_epsilon']
-    clustering = DBSCAN(eps=eps * (image_size[0] + image_size[1])/2, min_samples=1).fit(circle_centers)
+    clustering = DBSCAN(eps=eps * (image_size[0] + image_size[1]) / 2, min_samples=1).fit(circle_centers)
     clusters = dict()
     filtered_circles = []
     for idx, label in enumerate(clustering.labels_):
@@ -149,14 +151,14 @@ def detect_circles(image):
         else:
             filtered_circles = None
         if filtered_circles is not None:
-            return np.multiply(filtered_circles, 1/factor)
+            return np.multiply(filtered_circles, 1 / factor)
         else:
             return np.array([])
     else:
         return np.array([])
 
 
-# img = cv2.imread('../validation/images/0004.png')
+# img = cv2.imread('../validation/images/0035.png')
 # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 # circles = detect_circles(gray)
 # if circles is not None:
@@ -197,9 +199,35 @@ def filter_circles(circles):
 
 def circles_close_enough(circle1, circle2):
     total_radius = circle1[2] + circle2[2]
-    circle_coords = np.array([circle1[0], circle1[1]])
-    strong_circle_coords = np.array([circle2[0], circle2[1]])
-    distance = np.linalg.norm(circle_coords - strong_circle_coords)
+    circle1_coords = np.array([circle1[0], circle1[1]])
+    circle2_coords = np.array([circle2[0], circle2[1]])
+    distance = np.linalg.norm(circle1_coords - circle2_coords)
     radius_difference = abs(int(circle2[2]) - int(circle1[2]))
     hausdorff = distance + radius_difference
-    return hausdorff / total_radius < 0.1
+    return hausdorff / total_radius < 0.01
+
+
+def circles_IOU_close_enough(circle1, circle2, thresh=0.8):
+    r = circle1[2]
+    R = circle2[2]
+    circle1_coords = np.array([circle1[0], circle1[1]])
+    circle2_coords = np.array([circle2[0], circle2[1]])
+    d = np.linalg.norm(circle1_coords - circle2_coords)
+    # intersection area formula: https: // mathworld.wolfram.com / Circle - CircleIntersection.html
+    # https: // scipython.com / book / chapter - 8 - scipy / problems / p84 / overlapping - circles /
+    if d < (r + R):
+        minradius = min(r, R)
+        maxradius = max(r, R)
+        if d+minradius>maxradius:
+            alpha = acos((r ** 2 + d ** 2 - R ** 2) / (2 * r * d))
+            beta = acos((R ** 2 + d ** 2 - r ** 2) / (2 * R * d))
+            int_area = alpha * r ** 2 + beta * R ** 2 - 0.5 * r ** 2 * sin(2 * alpha) - 0.5 * R ** 2 * sin(2 * beta)
+            union_area = pi * r ** 2 + pi * R ** 2 - int_area
+            IOU = int_area/union_area
+        else:
+            int_area = pi*minradius**2
+            union_area = pi*maxradius**2
+            IOU = int_area/union_area
+    else:
+        IOU = 0
+    return IOU>thresh

@@ -17,7 +17,7 @@ from queue import Queue
 from sklearn.cluster import DBSCAN
 import sympy as sp
 import skspatial.objects as skobj
-from testing.params import Params
+from experiments.params import Params
 
 
 def is_pair_consistent(pairs, pair):
@@ -259,9 +259,8 @@ def get_primitives(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     filtered = remove_text(gray)
     #    cv2.imshow('filtered', filtered)
-    lines = get_filtered_lines(filtered)
-    old_lines = get_filtered_lines(filtered)
 
+    lines = get_filtered_lines(filtered)
     circles = detect_circles(filtered)
     image_with_lines = draw_lines(image, lines)
     #    cv2.imshow('lines', image_with_lines)

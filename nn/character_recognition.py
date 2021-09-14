@@ -3,6 +3,8 @@ from tensorflow.keras import layers
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, TensorBoard
 from tensorflow.keras.layers.experimental.preprocessing import Resizing
+from tensorflow.keras.utils import plot_model
+
 from sklearn import metrics
 import numpy as np
 import seaborn as sn
@@ -47,5 +49,5 @@ def get_confusion_matrix(model):
     sn.set(font_scale=0.5)
     sn.heatmap(confusion_matrix, annot=True)
     plt.show()
-character_model = models.load_model(filepath='bayes_optimized_character_model.h5')
-get_confusion_matrix(character_model)
+character_model = models.load_model(filepath='models/bayes_optimized_character_model.h5')
+plot_model(character_model, show_shapes=True, show_dtype=True)

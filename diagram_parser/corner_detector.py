@@ -7,7 +7,7 @@ import cv2.cv2 as cv2
 import numpy as np
 from diagram_parser.text_detector import remove_text
 from diagram_parser.text_detector import connected_components_and_threshold
-from testing.params import Params
+from experiments.params import Params
 
 
 def distance(x1, y1, x2, y2):

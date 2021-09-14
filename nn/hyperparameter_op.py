@@ -5,7 +5,6 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, TensorB
 import kerastuner as kt
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-
 def build_model(hp):
     model = models.Sequential()
     image_size = hp.Int('image_size', 26, 46, 10)
