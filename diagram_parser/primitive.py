@@ -1,14 +1,14 @@
 import copy
 class Primitive:
-    def __init__(self, coords, type, index, is_letter=None):
+    def __init__(self, coords, type, index, character_type=None):
         self.coords = coords
         self.type = type
         self.index = index
-        # is letter only for text
-        self.is_letter = is_letter
+        # character_type only for text
+        self.character_type = character_type
 
     def __str__(self) -> str:
-        return f'Primitive({self.coords}, {self.type}, {self.index}, {self.is_letter})'
+        return f'Primitive({self.coords}, {self.type}, {self.index}, {self.character_type})'
     def __repr__(self):
         return self.__str__()
     def __hash__(self):

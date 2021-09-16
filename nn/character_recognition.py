@@ -38,16 +38,15 @@ def get_confusion_matrix(model):
     Y_pred = model.predict(validation_data)
     y_pred = np.argmax(Y_pred, axis=1)
     confusion_matrix = metrics.confusion_matrix(validation_data.classes, y_pred)
-    confused_indices = np.transpose(np.where(confusion_matrix>10))
+    confused_indices = np.transpose(np.where(confusion_matrix > 50))
     confused_indices_array = np.array([confused_indices[i] for i in range (len(confused_indices)) if confused_indices[i][0]!=confused_indices[i][1]])
-    print(confused_indices_array)
     labels = CharacterPredictor().labels
-    print(confused_indices_array[0])
     map_function = lambda x: (labels[int(x[0])], labels[int(x[1])])
 
     print([map_function(confused_index) for confused_index in confused_indices_array])
     sn.set(font_scale=0.5)
     sn.heatmap(confusion_matrix, annot=True)
     plt.show()
+
 character_model = models.load_model(filepath='models/bayes_optimized_character_model.h5')
-plot_model(character_model, show_shapes=True, show_dtype=True)
+get_confusion_matrix(character_model)

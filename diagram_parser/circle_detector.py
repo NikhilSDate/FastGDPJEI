@@ -204,7 +204,7 @@ def circles_close_enough(circle1, circle2):
     distance = np.linalg.norm(circle1_coords - circle2_coords)
     radius_difference = abs(int(circle2[2]) - int(circle1[2]))
     hausdorff = distance + radius_difference
-    return hausdorff / total_radius < 0.01
+    return hausdorff / total_radius < 0.1
 
 
 def circles_IOU_close_enough(circle1, circle2, thresh=0.8):

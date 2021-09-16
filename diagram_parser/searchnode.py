@@ -24,7 +24,7 @@ class SearchNode:
         child = self.__copy__()
         child.level = self.level + 1
         children.append(child)
-        if primitive.is_letter:
+        if primitive.character_type == 'upper':
             for idx, point in enumerate(self.points):
                 possible_operations.append(('add_to_point', point))
                 child1 = self.__copy__()
