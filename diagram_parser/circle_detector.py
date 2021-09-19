@@ -96,13 +96,13 @@ def objective_function(param2, min_radius, num_circles, max_param_2, max_radius,
         return param2_term + min_radius_weight * min_radius_term
 
 
-def show_circles(image, circles):
+def draw_circles(image, circles):
+    img_copy = image.copy()
     for i in circles:
-        cv2.circle(image, (i[0], i[1]), i[2], (0, 255, 0), 2)
+        cv2.circle(img_copy, (int(i[0]), int(i[1])), int(i[2]), (0, 255, 0), 2)
         # draw the center of the circle
-        cv2.circle(image, (i[0], i[1]), 2, (0, 0, 255), 3)
-    cv2.imshow('detected circles', image)
-    cv2.waitKey()
+        cv2.circle(img_copy, (int(i[0]), int(i[1])), 2, (0, 0, 255), 3)
+    return img_copy
 
 
 def clustering_filter(circles, image_size):
@@ -218,16 +218,16 @@ def circles_IOU_close_enough(circle1, circle2, thresh=0.8):
     if d < (r + R):
         minradius = min(r, R)
         maxradius = max(r, R)
-        if d+minradius>maxradius:
+        if d + minradius > maxradius:
             alpha = acos((r ** 2 + d ** 2 - R ** 2) / (2 * r * d))
             beta = acos((R ** 2 + d ** 2 - r ** 2) / (2 * R * d))
             int_area = alpha * r ** 2 + beta * R ** 2 - 0.5 * r ** 2 * sin(2 * alpha) - 0.5 * R ** 2 * sin(2 * beta)
             union_area = pi * r ** 2 + pi * R ** 2 - int_area
-            IOU = int_area/union_area
+            IOU = int_area / union_area
         else:
-            int_area = pi*minradius**2
-            union_area = pi*maxradius**2
-            IOU = int_area/union_area
+            int_area = pi * minradius ** 2
+            union_area = pi * maxradius ** 2
+            IOU = int_area / union_area
     else:
         IOU = 0
-    return IOU>thresh
+    return IOU > thresh

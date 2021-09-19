@@ -34,8 +34,10 @@ class ParamOptimizer:
         space['line_detector_close_enough_angle_threshold'] = hp.uniform('line_detector_close_enough_angle_threshold',
                                                                          0.02,
                                                                          0.3)
-        space['line_detector_close_enough_rho_threshold'] = hp.uniform('line_detector_close_enough_rho_threshold', 0.01, 0.1)
+        space['line_detector_close_enough_rho_threshold'] = hp.uniform('line_detector_close_enough_rho_threshold', 0.01,
+                                                                       0.1)
         return space
+
     def get_point_optimization_space(self):
         space = dict()
         space['primitive_group_weight_offset_factor'] = hp.uniform('primitive_group_weight_offset_factor', 0.05, 0.5)
@@ -45,21 +47,25 @@ class ParamOptimizer:
                                                                      0.1)
         space['diagram_graph_builder_dbscan_eps'] = hp.uniform('diagram_graph_builder_dbscan_eps', 0.01, 0.2)
         return space
+
     @staticmethod
     def point_optimization_objective(args):
         Params.update_params(args)
-        f1_scores, total_precision, total_recall = run_test('../aaai', '../aaai/annotations_2.xml')
+        f1_scores, total_precision, total_recall = run_test('data/images', 'data/annotations.xml')
         print(total_precision, total_recall)
         f1_scores = np.array(f1_scores)
         loss = np.sum((1 - f1_scores) ** 2)
 
         return loss
+
     @staticmethod
     def primitive_optimization_objective(args):
         Params.update_params(args)
-        total_precision, total_recall = run_primitive_test('../aaai', '../aaai/annotations_2.xml')
-        f1 = 2*total_precision*total_recall/(total_precision+total_recall)
-        return 1-f1
+        total_precision, total_recall = run_primitive_test('data/images', 'data/annotations.xml')
+        print(total_precision, total_recall)
+        f1 = 2 * total_precision * total_recall / (total_precision + total_recall)
+        return 1 - f1
+
     @staticmethod
     def get_best_params(fp, space):
         with open(fp, 'rb+') as f:
@@ -70,6 +76,8 @@ class ParamOptimizer:
             # remove array
             best_params[key] = value[0]
         return space_eval(space, best_params)
+
+
 tf.get_logger().setLevel('ERROR')
 
 # baseline = run_primitive_test('../validation/images', '../validation/annotations.xml')
@@ -82,8 +90,6 @@ tf.get_logger().setLevel('ERROR')
 # print(optimized)
 
 print(ParamOptimizer.point_optimization_objective({}))
-#optimizer = ParamOptimizer(ParamOptimizer.primitive_optimization_objective)
+# optimizer = ParamOptimizer(ParamOptimizer.primitive_optimization_objective)
 # optimizer.run_trial('C:\\Users\cat\\PycharmProjects\\EuclideanGeometrySolver\\experiments\\optimization_results\\primitive_detection\\part_1.pickle',
 #                    'C:\\Users\cat\\PycharmProjects\\EuclideanGeometrySolver\\experiments\\optimization_results\\primitive_detection\\part_1.pickle', optimizer.get_prititive_optimization_space(), 5)
-
-

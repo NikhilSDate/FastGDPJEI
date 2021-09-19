@@ -14,7 +14,6 @@ while True:
     equations.append(statement.get_equation())
     symbol_set.union(statement.get_statement_symbols())
 symbols_tuple=tuple(symbol_set)
-print(solve)
 
 
 

@@ -1,12 +1,11 @@
 from diagram_parser.line_detecter import get_filtered_lines, draw_lines, inclination
 from diagram_parser.corner_detector import get_corners, draw_corners
 from diagram_parser.text_detector import text_components_with_centroids, remove_text
-from diagram_parser.circle_detector import detect_circles
+from diagram_parser.circle_detector import detect_circles, draw_circles
 import cv2.cv2 as cv2
 import numpy as np
 from math import sin, cos, sqrt
 import itertools
-import networkx as nx
 from nn.character_predictor import CharacterPredictor
 from diagram_parser.searchnode import SearchNode
 from diagram_parser.primitive import Primitive
@@ -42,44 +41,76 @@ def is_triple_consistent(triples, triple):
 
 
 def calculate_intersection(structure1, structure2):
-    if (structure1.shape[0] == 3) and (structure2.shape[0] == 2):
-        rho = structure2[0]
-        theta = structure2[1]
+    if ((structure1.shape[0] == 3) and (structure2.shape[0] == 2)) or (
+            (structure1.shape[0] == 2) and (structure2.shape[0] == 3)):
+        if structure1.shape[0] == 3:
+            circle = structure1
+            line = structure2
+        else:
+            circle = structure2
+            line = structure1
+        rho = line[0]
+        theta = line[1]
+        x0 = circle[0]
+        y0 = circle[1]
+        r = circle[2]
+
         A = cos(theta)
         B = sin(theta)
         C = -rho
+
+        x = sp.Symbol('x')
+        y = sp.Symbol('y')
+        circle_eq = sp.Eq((x - x0) ** 2 + (y - y0) ** 2, r ** 2)
+
+        perp_distance = point_to_line_distance((x0, y0), line)
+        # PARAM circle_tangent_eps
+        eps = Params.params['circle_tangent_eps']
+        if abs((perp_distance - r) / r) < eps:
+            perp_line_A = B
+            perp_line_B = -A
+            perp_line_C = A * y0 - B * x0
+            perp_line_eq = sp.Eq(perp_line_A * x + perp_line_B * y + perp_line_C, 0)
+            solutions = sp.solve([circle_eq, perp_line_eq], (x, y))
+            if point_to_line_distance(solutions[0], line) < point_to_line_distance(solutions[1], line):
+                return float(solutions[0][0].evalf()), float(solutions[0][1].evalf())
+            else:
+                return float(solutions[1][0].evalf()), float(solutions[1][1].evalf())
+        else:
+            line_eq = sp.Eq(A * x + B * y + C, 0)
+            solutions = sp.solve([circle_eq, line_eq], (x, y))
+            if type(solutions[0][0]) == sp.core.add.Add or type(solutions[0][0]) == sp.core.add.Add or type(
+                    solutions[1][0]) == sp.core.add.Add or type(solutions[1][1]) == sp.core.add.Add:
+                return None
+            solution1 = (float(solutions[0][0].evalf()), float(solutions[0][1].evalf()))
+
+            solution2 = (float(solutions[1][0].evalf()), float(solutions[1][1].evalf()))
+            return [solution1, solution2]
+
+    elif (structure1.shape[0] == 3) and (structure2.shape[0] == 3):
         x0 = structure1[0]
         y0 = structure1[1]
-        r = structure1[2]
+        r0 = structure1[2]
+
+        x1 = structure2[0]
+        y1 = structure2[1]
+        r1 = structure2[2]
 
         x = sp.Symbol('x')
         y = sp.Symbol('y')
+        circle1_eq = sp.Eq((x - x0) ** 2 + (y - y0) ** 2, r0 ** 2)
+        circle2_eq = sp.Eq((x - x1) ** 2 + (y - y1) ** 2, r1 ** 2)
 
-        circle_eq = sp.Eq((x - x0) ** 2 + (y - y0) ** 2, r ** 2)
-        line_eq = sp.Eq(A * x + B * y + C, 0)
+        solutions = sp.solve([circle1_eq, circle2_eq], (x, y))
+        if type(solutions[0][0]) == sp.core.add.Add or type(solutions[0][0]) == sp.core.add.Add or type(
+                solutions[1][0]) == sp.core.add.Add or type(solutions[1][1]) == sp.core.add.Add:
+            return None
+        solution1 = (float(solutions[0][0].evalf()), float(solutions[0][1].evalf()))
 
-        solutions = sp.solve([circle_eq, line_eq], (x, y))
-        return solutions
-    elif (structure1.shape[0] == 2) and (structure2.shape[0] == 3):
-        rho = structure1[0]
-        theta = structure1[1]
-        A = cos(theta)
-        B = sin(theta)
-        C = -rho
-        x0 = structure2[0]
-        y0 = structure2[1]
-        r = structure2[2]
+        solution2 = (float(solutions[1][0].evalf()), float(solutions[1][1].evalf()))
+        return [solution1, solution2]
 
-        x = sp.Symbol('x')
-        y = sp.Symbol('y')
 
-        circle_eq = sp.Eq((x - x0) ** 2 + (y - y0) ** 2, r ** 2)
-        line_eq = sp.Eq(A * x + B * y + C, 0)
-
-        solutions = sp.solve([circle_eq, line_eq], (x, y))
-        return solutions
-    elif (structure1.shape[0] == 3) and (structure2.shape[0] == 3):
-        pass
     else:
         rho1 = structure1[0]
         theta1 = structure1[1]
@@ -134,14 +165,12 @@ def get_merged_intersections(lines, circles, image_shape):
                 valid_solutions = []
                 solution1 = intersection_point[0]
                 solution2 = intersection_point[1]
-                if type(solution1[0]) != sp.core.add.Add and (0 <= solution1[0] <= image_shape[1]) and type(
-                        solution1[1]) != sp.core.add.Add and (
+                if (0 <= solution1[0] <= image_shape[1]) and (
                         0 <= solution1[1] <= image_shape[0]):
-                    valid_solutions.append((float(solution1[0]), float(solution1[1].evalf())))
-                if type(solution2[0]) != sp.core.add.Add and (0 <= solution2[0] <= image_shape[1]) and type(
-                        solution2[1]) != sp.core.add.Add and (
+                    valid_solutions.append(solution1)
+                if (0 <= solution2[0] <= image_shape[1]) and (
                         0 <= solution2[1] <= image_shape[0]):
-                    valid_solutions.append((float(solution2[0].evalf()), float(solution2[1].evalf())))
+                    valid_solutions.append(solution2)
                 if len(valid_solutions) > 0:
                     intersections[idx] = valid_solutions
                 for valid_solution in valid_solutions:
@@ -149,42 +178,6 @@ def get_merged_intersections(lines, circles, image_shape):
     for i, circle in enumerate(circles):
         final_intersections[(circle[0], circle[1])] = (f'c{i}_center',)
     return final_intersections
-    # merge similar intersections
-    grid = []
-    for i in range(image_shape[0]):
-        row = [-1] * image_shape[1]
-        grid.append(row)
-    merged_items = dict()
-    connections = nx.Graph()
-    for pair in intersections.items():
-        connections.add_node(pair[0])
-        coord = pair[1]
-        x_range, y_range = (range(int(coord[0] - 2), int(coord[0] + 2)), range(int(coord[1] - 2), int(coord[1] + 2)))
-        overlapping_indices = set()
-        for y in y_range:
-            for x in x_range:
-                if not ((x < 0 or x >= image_shape[1]) or (y < 0 or y >= image_shape[0])):
-                    if grid[y][x] != -1:
-                        overlapping_indices.add(grid[y][x])
-
-                    grid[y][x] = pair[0]
-
-        for index in overlapping_indices:
-            connections.add_edge(pair[0], index)
-    components = nx.connected_components(connections)
-    for component in components:
-        values = []
-        for node in component:
-            values.append(intersections[node])
-        merged_items[tuple(component)] = values
-    final_merged_items = dict()
-    for item in merged_items.items():
-        intersecting_lines = set()
-        for line_pair in item[0]:
-            intersecting_lines.add(line_pair[0])
-            intersecting_lines.add(line_pair[1])
-        final_merged_items[tuple(item[1][0])] = tuple(intersecting_lines)
-    return final_merged_items
 
 
 def get_strong_pairs(set1, set2, comparator):
@@ -258,17 +251,13 @@ def get_weak_primitives(corners, intersections, centroids, strong_items):
 def get_primitives(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     filtered = remove_text(gray)
-    #    cv2.imshow('filtered', filtered)
 
     lines = get_filtered_lines(filtered)
     circles = detect_circles(filtered)
-    image_with_lines = draw_lines(image, lines)
-#    cv2.imshow('lines', image_with_lines)
     intersections = get_merged_intersections(lines, circles, image.shape)
     corners = get_corners(image)
     image_with_corners = draw_corners(image, corners)
     # cv2.imshow('corners', image_with_corners)
-    cv2.waitKey()
     text_regions = text_components_with_centroids(image)
     return corners, lines, circles, intersections, text_regions
 
@@ -339,7 +328,8 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
         if node.level >= len(upper):
             break
         children = node.generate_children(upper[node.level])
-        sorted_children = sorted(children, key=lambda x: x.fitness(weight_offset=offset_factor*(image_shape[0]+image_shape[1])/2))
+        sorted_children = sorted(children, key=lambda x: x.fitness(
+            weight_offset=offset_factor * (image_shape[0] + image_shape[1]) / 2))
         best_child = sorted_children[-1]
 
         if len(sorted_children) < 1:
@@ -379,6 +369,7 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
                     line_set.add(index)
             for line in line_set:
                 point.add_property('lieson', f'l{line}')
+            # TODO: ADD CIRCLE DETECTION HERE
         if cluster.contains('t'):
             for text_primitive in cluster.primitives['t']:
                 text_region = list(text_regions.values())[text_primitive.index]
@@ -390,8 +381,9 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
         else:
             label = f'p{diagram_interpretation.num_points()}'
             point.add_label(label)
-        diagram_interpretation.add_point(point)
-    point_projections = get_point_projections(lines, best_child.points, diagram_interpretation)
+        if len(point.properties) != 0:
+            diagram_interpretation.add_point(point)
+    point_projections = get_point_projections(lines, diagram_interpretation)
     number_search_queue = Queue()
     best_child.reset_level()
     best_child.set_point_projections(point_projections)
@@ -416,8 +408,7 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
     return diagram_interpretation
 
 
-
-def get_point_projections(lines, primitive_groups, interpretation):
+def get_point_projections(lines, interpretation):
     points_on_line = dict()
     for point in interpretation.points:
         for property in point.properties:
@@ -457,16 +448,25 @@ def find_sk_line(hesse_line):
         direction = (cos(theta), sin(theta))
 
     return skobj.Line(point, direction)
-def display_interpretation(image, interpretation):
-    # TODO
-    pass
-    # for index, point in enumerate(best_child.points):
-    #     hue = 179 * index / len(best_child.points)
-    #     hsv = np.uint8([[[hue, 255, 255]]])
-    #     rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]
-    #     for coord in point.coord_list():
-    #         cv2.circle(image, (int(coord[0]), int(coord[1])), 2, rgb.tolist(), -1)
-    # cv2.imshow('test', image)
-    # cv2.waitKey()
-# image = cv2.imread('../aaai/060.png')
-# print(parse_diagran(image))
+
+
+def display_interpretation(image, interpretation, lines, circles):
+    for idx, point in enumerate(interpretation):
+        hue = 179 * idx / len(interpretation.points)
+        hsv = np.uint8([[[hue, 255, 255]]])
+        rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]
+        int_coords = (int(point.coords[0]), int(point.coords[1]))
+        cv2.circle(image, int_coords, 2, rgb.tolist(), -1)
+        cv2.putText(image, point.labels[0], int_coords, cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0))
+    line_img = draw_lines(image, lines)
+    circle_img = draw_circles(image, circles)
+    cv2.imshow('lines', line_img)
+    # cv2.imshow('circles', circle_img)
+    # cv2.imshow('interpretation', image)
+    cv2.waitKey()
+
+#
+# image = cv2.imread('../validation/images/0013.png')
+# interpretation, lines, circles = parse_diagran(image)
+# print(interpretation)
+# display_interpretation(image, interpretation, lines.values(), circles.values())

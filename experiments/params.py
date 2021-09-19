@@ -3,7 +3,7 @@ import numpy as np
 
 class Params:
     params = {"hough_circles_param_1": 50, "hough_circles_param_2_range": (1, 100),
-                "circle_detector_objective_function_param_2_term_shape": 5,
+              "circle_detector_objective_function_param_2_term_shape": 5,
               "circle_detector_objective_function_min_radius_term_shape": (1.25, 0.2),
               "circle_detector_min_radius_weight": 0.5,
               "circle_detector_is_a_circle_threshold": 70,
@@ -20,9 +20,10 @@ class Params:
               "corner_harris_params": (2, 3, 0.04),
               "corner_detector_is_corner_threshold": 0.04,
               "diagram_graph_builder_dbscan_eps": 0.05,
-              "primitive_group_weight_offset_factor":0.1,
-              'resize_image_if_too_big':True,
-              'diagram_parser_corner_lies_on_line_eps':0.03
+              "primitive_group_weight_offset_factor": 0.1,
+              'resize_image_if_too_big': True,
+              'diagram_parser_corner_lies_on_line_eps': 0.03,
+              'circle_tangent_eps': 0.1
               }
 
     @classmethod

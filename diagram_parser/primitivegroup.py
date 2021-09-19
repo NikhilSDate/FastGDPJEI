@@ -59,12 +59,14 @@ class PrimitiveGroup:
             print('only text')
             penalty += 10000
         return penalty
+
+    '''
+    calculates score for this primitivegroup (higher is better)
+    :param offset: neutral point.
+    :return:
+    '''
     def weight(self, offset=0):
-        '''
-        calculates score for this primitivegroup (higher is better)
-        :param offset: neutral point.
-        :return:
-        '''
+
         weight = 0
         if self.contains('i'):
             i_centroid = self.centroid('i')

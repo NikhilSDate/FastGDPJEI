@@ -20,13 +20,11 @@ class SearchNode:
         self.point_projections = point_projections
     def generate_children(self, primitive):
         children = []
-        possible_operations = ['do_nothing']
         child = self.__copy__()
         child.level = self.level + 1
         children.append(child)
         if primitive.character_type == 'upper':
             for idx, point in enumerate(self.points):
-                possible_operations.append(('add_to_point', point))
                 child1 = self.__copy__()
                 child1.points[idx].add(primitive)
                 child1.noise_set.remove(primitive)

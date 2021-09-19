@@ -4,7 +4,7 @@ from diagram_parser.point import Point
 from diagram_parser.circle_detector import circles_close_enough, circles_IOU_close_enough
 import numpy as np
 import xml.etree.ElementTree as ET
-from diagram_parser.diagram_graph_builder import parse_diagran
+from diagram_parser.diagram_graph_builder import parse_diagran, display_interpretation
 import cv2.cv2 as cv2
 
 
@@ -55,7 +55,7 @@ def f1_score(ground_truth_interpretation, ground_truth_lines, ground_truth_circl
              predicted_lines, predicted_circles, image_size):
     matched_points = [False] * len(predicted_interpretation.points)
     point_match = dict()
-    DISTANCE_THRESHOLD = 10
+    DISTANCE_THRESHOLD = 0.05*(image_size[0]+image_size[1])/2
     for idx1, point1 in enumerate(ground_truth_interpretation):
         for idx2, point2 in enumerate(predicted_interpretation):
             if not matched_points[idx2] and distance(point1.coords,
@@ -157,7 +157,7 @@ def run_test(image_directory, annotation_path):
 
             diagram_image = cv2.imread(f'{image_directory}/{file_name}')
             predicted_interpretation, predicted_lines, predicted_circles = parse_diagran(diagram_image)
-
+            display_interpretation(diagram_image, interpretation, [], [])
             f1_info = f1_score(interpretation, lines, circles, predicted_interpretation, predicted_lines,
                                predicted_circles, diagram_image.shape)
             total_relevant_properties += f1_info[0]
@@ -168,10 +168,17 @@ def run_test(image_directory, annotation_path):
 
             count += 1
             print(f'files done {count}')
-    total_precision = total_relevant_properties / total_predicted_properties
-    total_recall = total_relevant_properties / total_ground_truth_properties
+            print(file_name)
+            print(f1_info)
+    try:
+        total_precision = total_relevant_properties / total_predicted_properties
+        total_recall = total_relevant_properties / total_ground_truth_properties
+        return f1_scores, total_precision, total_recall
 
-    return f1_scores, total_precision, total_recall
+    except ZeroDivisionError:
+        return 0, 0, 0
+
+
 
 
 def run_primitive_test(image_directory, annotation_path):
