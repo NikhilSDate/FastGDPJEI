@@ -1,14 +1,23 @@
-from experiments.tester import run_test, run_primitive_test
+from experiments.tester import run_test, run_primitive_test, parse_annotations
 from hyperopt import hp, fmin, tpe, Trials, space_eval
 from experiments.params import Params
 import pickle
 import tensorflow as tf
 import numpy as np
+import random
 
 
 class ParamOptimizer:
-    def __init__(self, objective):
+    def __init__(self, objective, annotations_path, image_path, validation_split=0.2, seed=42):
         self.objective = objective
+        self.annotations_path = annotations_path
+        self.image_path = image_path
+        random.seed(seed)
+        file_set = set()
+        for file_name, _, _, _ in parse_annotations(self.annotations_path):
+            file_set.add(file_name)
+        self.training = random.sample(file_set, int((1 - validation_split) * len(file_set)))
+        self.validation = file_set.difference(self.training)
 
     def run_trial(self, input_path, output_path, space, max_evals):
         if input_path is None:
@@ -80,16 +89,4 @@ class ParamOptimizer:
 
 tf.get_logger().setLevel('ERROR')
 
-# baseline = run_primitive_test('../validation/images', '../validation/annotations.xml')
-# print(baseline)
 # optimizer = ParamOptimizer(ParamOptimizer.primitive_optimization_objective)
-# space = optimizer.get_prititive_optimization_space()
-# best_params = ParamOptimizer.get_best_params('C:\\Users\cat\\PycharmProjects\\EuclideanGeometrySolver\\experiments\\optimization_results\\primitive_detection\\part_1.pickle', space)
-# Params.update_params(best_params)
-# optimized = run_primitive_test('../validation/images', '../validation/annotations.xml')
-# print(optimized)
-
-print(ParamOptimizer.point_optimization_objective({}))
-# optimizer = ParamOptimizer(ParamOptimizer.primitive_optimization_objective)
-# optimizer.run_trial('C:\\Users\cat\\PycharmProjects\\EuclideanGeometrySolver\\experiments\\optimization_results\\primitive_detection\\part_1.pickle',
-#                    'C:\\Users\cat\\PycharmProjects\\EuclideanGeometrySolver\\experiments\\optimization_results\\primitive_detection\\part_1.pickle', optimizer.get_prititive_optimization_space(), 5)

@@ -146,18 +146,16 @@ def parse_annotations(annotation_path):
             yield file_name, diagram_interpretation, ground_truth_lines, processed_circles
 
 
-def run_test(image_directory, annotation_path):
+def run_test(image_directory, annotation_path, image_set):
     total_relevant_properties = 0
     total_predicted_properties = 0
     total_ground_truth_properties = 0
     f1_scores = []
     count = 0
     for file_name, interpretation, lines, circles in parse_annotations(annotation_path):
-        if interpretation.total_properties() > 0:
-
+        if interpretation.total_properties() > 0 and file_name in image_set:
             diagram_image = cv2.imread(f'{image_directory}/{file_name}')
             predicted_interpretation, predicted_lines, predicted_circles = parse_diagran(diagram_image)
-            display_interpretation(diagram_image, interpretation, [], [])
             f1_info = f1_score(interpretation, lines, circles, predicted_interpretation, predicted_lines,
                                predicted_circles, diagram_image.shape)
             total_relevant_properties += f1_info[0]
@@ -181,13 +179,13 @@ def run_test(image_directory, annotation_path):
 
 
 
-def run_primitive_test(image_directory, annotation_path):
+def run_primitive_test(image_directory, annotation_path, image_set):
     total_relevant_properties = 0
     total_predicted_properties = 0
     total_ground_truth_properties = 0
     count = 0
     for file_name, interpretation, lines, circles in parse_annotations(annotation_path):
-        if interpretation.total_properties() > 0:
+        if interpretation.total_properties() > 0 and file_name in image_set:
 
             diagram_image = cv2.imread(f'{image_directory}/{file_name}')
             predicted_interpretation, predicted_lines, predicted_circles = parse_diagran(diagram_image)
@@ -196,19 +194,10 @@ def run_primitive_test(image_directory, annotation_path):
             total_relevant_properties += f1_info[0]
             total_predicted_properties += f1_info[1]
             total_ground_truth_properties += f1_info[2]
-            # for debugging
- #           if total_relevant_properties > total_predicted_properties or total_relevant_properties > total_ground_truth_properties:
-#                print(interpretation, lines, circles, predicted_interpretation, f1_info, file_name)
+
             count += 1
             print(f'files done: {count}')
     total_precision = total_relevant_properties / total_predicted_properties
     total_recall = total_relevant_properties / total_ground_truth_properties
 
     return total_precision, total_recall
-# for file_name, interpretation, lines, circles in parse_annotations('../aaai/annotations_2.xml'):
-#     print(file_name)
-#     print(interpretation)
-#     print(lines)
-#     print(circles)
-#     print(len(lines)+len(circles))
-#     print()
