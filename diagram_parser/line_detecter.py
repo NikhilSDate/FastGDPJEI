@@ -218,9 +218,10 @@ def get_filtered_lines(img):
             return filtered_lines
     elif mode == 'hough_p_hesse':
         resize_image = Params.params['resize_image_if_too_big']
+        resize_dim = Params.params['resize_dim']
         max_dimension = max(img.shape[0], img.shape[1])
-        if max_dimension > 250 and resize_image:
-            factor = 250/max_dimension
+        if max_dimension > resize_dim and resize_image:
+            factor = resize_dim/max_dimension
             img = cv2.resize(img, (0, 0), fx=factor, fy=factor)
 
         else:

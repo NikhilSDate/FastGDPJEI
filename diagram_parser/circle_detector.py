@@ -36,8 +36,8 @@ def get_best_params(image, objective_function):
     circle_counts = []
     max_circles = 0
     param_2_range = Params.params["hough_circles_param_2_range"]
-    for param2 in range(param_2_range[0], param_2_range[1], 2):
-        for min_radius in range(0, int((image.shape[0] + image.shape[1]) / 4), 2):
+    for param2 in range(param_2_range[0], param_2_range[1], 3):
+        for min_radius in range(0, int((image.shape[0] + image.shape[1]) / 4), 3):
             trial_circles = run_hough_trial(image, param2, min_radius)
 
             if trial_circles is not None and not np.array_equal(trial_circles, [[50], [0], [0], [0]]):
@@ -60,7 +60,7 @@ def get_best_params(image, objective_function):
                                                   max_circles)
     sorted_results = sorted(trial_results, key=comparator)
     params = sorted_results[-1]
-
+    print(params)
     return params
 
 
@@ -90,7 +90,6 @@ def objective_function(param2, min_radius, num_circles, max_param_2, max_radius,
         # PARAM: hough_circles_objective_function_min_radius_term_shape
         min_radius_term_shape = Params.params['circle_detector_objective_function_min_radius_term_shape']
         min_radius_term = (1 - (min_radius_term_shape[0] * (min_radius / max_radius - min_radius_term_shape[1]) ** 2))
-        num_circles_term = 1 - math.exp(-5 * math.pow(num_circles / max_circles, 1 / 4))
         # PARAM: hough_circles_param_2_weight
         min_radius_weight = Params.params['circle_detector_min_radius_weight']
         return param2_term + min_radius_weight * min_radius_term
@@ -128,15 +127,14 @@ def detect_circles(image):
     image = preprocess(image)
     max_dimension = max(image.shape[0], image.shape[1])
     resize_image = Params.params['resize_image_if_too_big']
-
-    if max_dimension > 250 and resize_image:
-        factor = 250 / max_dimension
+    resize_dim = Params.params['resize_dim']
+    if max_dimension > resize_dim and resize_image:
+        factor = resize_dim / max_dimension
         image = cv2.resize(image, (0, 0), fx=factor, fy=factor)
     else:
         factor = 1
     best_params = get_best_params(image, objective_function=objective_function)
-    # TODO: MAYBE USE A MORE SOPHISTICATED WAY OF DETERMINING IF THE IMAGE CONTAINS CIRCLES. POSSIBLY OPTIMIZE
-    #  THRESHOLD BY USING the area under the ROC
+
     # PARAM: hough_circles_is_a_circle_threshold
     is_a_circle = Params.params['circle_detector_is_a_circle_threshold']
     if best_params[0] > is_a_circle:
@@ -158,11 +156,13 @@ def detect_circles(image):
         return np.array([])
 
 
-# img = cv2.imread('../validation/images/0035.png')
+# img = cv2.imread('../aaai/025.png')
 # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 # circles = detect_circles(gray)
 # if circles is not None:
-#     show_circles(img, circles.astype(np.uint16))
+#     draw_circles(img, circles.astype(np.uint16))
+# cv2.imshow('circles', img)
+# cv2.waitKey()
 
 
 # ax = fig.gca(projection='3d')

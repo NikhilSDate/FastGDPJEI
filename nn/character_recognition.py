@@ -49,4 +49,7 @@ def get_confusion_matrix(model):
     plt.show()
 
 character_model = models.load_model(filepath='models/bayes_optimized_character_model.h5')
-get_confusion_matrix(character_model)
+current_shape = list(character_model.layers[0].input_shape)
+current_shape[0] = 1
+character_model.layers[0].input_shape = tuple(current_shape)
+plot_model(character_model, to_file='model.png', show_shapes=True)
