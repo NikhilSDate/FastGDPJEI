@@ -3,7 +3,7 @@ import numpy as np
 from experiments.params import Params
 from numpy import arctan2
 from math import sqrt
-
+import os
 from diagram_parser.text_detector import remove_text
 
 
@@ -188,18 +188,11 @@ def get_hough_lines_p(img):
 def draw_lines(img, lines):
     img_copy = img.copy()
     for line in lines:
-        rho = line[0]
-        theta = line[1]
-        a = np.cos(theta)
-        b = np.sin(theta)
-        x0 = a * rho
-        y0 = b * rho
-        x1 = int(x0 + 1000 * (-b))
-        y1 = int(y0 + 1000 * (a))
-        x2 = int(x0 - 1000 * (-b))
-        y2 = int(y0 - 1000 * (a))
-
-        cv2.line(img_copy, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        x1 = line[0]
+        y1 = line[1]
+        x2 = line[2]
+        y2 = line[3]
+        cv2.line(img_copy, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
     return img_copy
 
     # plt.hist(distances_list,density=True,bins=30)
@@ -207,6 +200,7 @@ def draw_lines(img, lines):
 
 
 def get_filtered_lines(img):
+    # TODO: FIX BUG IN LINE RMS SUPPRESSION
     mode = Params.params['line_detector_mode']
     if mode == 'hough':
         hough_lines = get_hough_lines(img)
@@ -232,12 +226,13 @@ def get_filtered_lines(img):
             return np.array([])
         else:
             filtered_lines = filter_lines_p(hough_lines_p, img.shape)
+           #  return hough_lines_p
             hesse_lines = [np.array(hesse_normal_form(endpoints_line)) for endpoints_line in filtered_lines]
             return hesse_lines
-# image = cv2.imread('../textbooks/0035.png')
-# filtered_image = remove_text(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
-# lines = get_filtered_lines(image)
-# print(lines)
-# N = len(lines)
-# cv2.imshow('lines', draw_lines(image, lines))
-# cv2.waitKey()
+# for filename in os.listdir(
+#         'C:\\Users\cat\\PycharmProjects\\EuclideanGeometrySolver\\experiments\\data\\images'):
+#     diagram = cv2.imread('C:\\Users\cat\\PycharmProjects\\EuclideanGeometrySolver\\experiments\\data\\images\\' + filename)
+#     lines = get_filtered_lines(diagram)
+#
+#     cv2.imshow('lines', draw_lines(diagram, lines))
+#     cv2.waitKey()

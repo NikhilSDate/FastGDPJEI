@@ -1,5 +1,6 @@
 from experiments.tester import run_test, run_primitive_test, parse_annotations
 from hyperopt import hp, fmin, tpe, Trials, space_eval, atpe
+from hyperopt.fmin import generate_trials_to_calculate
 from experiments.params import Params
 import pickle
 import numpy as np
@@ -22,10 +23,8 @@ class ParamOptimizer:
         self.validation = set(files).difference(self.training)
 
     def run_trial(self, input_path, output_path, space, max_evals):
-        with open(output_path, 'wb+') as f:
-            pickle.dump([], f)
         if input_path is None:
-            trials = Trials()
+            trials = self.get_initial_trials(space)
         else:
             with open(input_path, 'rb') as f:
                 trials = pickle.load(f)
@@ -33,15 +32,16 @@ class ParamOptimizer:
         best = fmin(objective, space, algo=atpe.suggest, max_evals=max_evals, trials=trials)
         with open(output_path, 'wb+') as f:
             pickle.dump(trials, f)
-
+    def get_initial_trials(self, space):
+        init_values = {}
+        for key, _ in space.items():
+            init_values[key] = Params.params[key]
+        return generate_trials_to_calculate([init_values])
     def get_prititive_optimization_space(self):
         space = dict()
-        space['circle_detector_objective_function_param_2_term_shape'] = hp.uniform(
-            'circle_detector_objective_function_param_2_term_shape', -1, 5)
-
-        space['circle_detector_objective_function_min_radius_term_shape'] = (
-            hp.uniform('min_radius_term_0', 0, 2), hp.uniform('min_radius_term_1', 0, 1))
-        space['circle_detector_min_radius_weight'] = hp.uniform('circle_detector_min_radius_weight', 0.1, 2)
+        space['min_radius_factor'] = hp.uniform('min_radius_factor', 0.05, 0.4)
+        space['resize_dim'] = hp.quniform('resize_dim', 150, 350, 1)
+        space['hough_circles_param_1'] = hp.uniform('hough_circles_param_1', 25, 100)
         space['circle_detector_is_a_circle_threshold'] = hp.quniform('circle_detector_is_a_circle_threshold',
                                                                      25, 99, 1)
         space['circle_detector_clustering_epsilon'] = hp.uniform('circle_detector_clustering_epsilon', 0.05, 0.2)
@@ -66,9 +66,9 @@ class ParamOptimizer:
     def point_optimization_objective(args, image_set):
         Params.update_params(args)
         f1_scores, total_precision, total_recall = run_test('data/images', 'data/annotations.xml', image_set)
+        print(total_precision, total_recall)
         f1_scores = np.array(f1_scores)
         loss = np.sum((1 - f1_scores) ** 2)
-
         return loss
 
     @staticmethod
@@ -91,8 +91,24 @@ class ParamOptimizer:
 
 
 optimizer = ParamOptimizer(ParamOptimizer.primitive_optimization_objective, 'data/annotations.xml', 'data/images')
-space = optimizer.get_prititive_optimization_space()
-optimizer.run_trial(None, 'optimization_results/primitive_detection_with_stopping/part_1.pickle', space, 20)
+print(ParamOptimizer.point_optimization_objective({}, None))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # with open('optimization_results/primitive_detection_with_stopping/2.pickle', 'rb+') as f:
 #     trials = pickle.load(f)
 # validation_losses = []

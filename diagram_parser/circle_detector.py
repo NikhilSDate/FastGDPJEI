@@ -36,8 +36,10 @@ def get_best_params(image, objective_function):
     circle_counts = []
     max_circles = 0
     param_2_range = Params.params["hough_circles_param_2_range"]
-    for param2 in range(param_2_range[0], param_2_range[1], 3):
-        for min_radius in range(0, int((image.shape[0] + image.shape[1]) / 4), 3):
+    for param2 in range(param_2_range[0], param_2_range[1], 2):
+            min_radius = Params.params['min_radius_factor']*int((image.shape[0] + image.shape[1]) / 4)
+            min_radius = int(min_radius)
+#        for min_radius in range(0, int((image.shape[0] + image.shape[1]) / 4), 3):
             trial_circles = run_hough_trial(image, param2, min_radius)
 
             if trial_circles is not None and not np.array_equal(trial_circles, [[50], [0], [0], [0]]):
@@ -60,7 +62,6 @@ def get_best_params(image, objective_function):
                                                   max_circles)
     sorted_results = sorted(trial_results, key=comparator)
     params = sorted_results[-1]
-    print(params)
     return params
 
 
@@ -84,15 +85,15 @@ def objective_function(param2, min_radius, num_circles, max_param_2, max_radius,
         return 0
     else:
         # PARAM: hough_circles_objective_function_param_2_term_shape
-        param_2_term_shape = Params.params['circle_detector_objective_function_param_2_term_shape']
-        param2_term = (1 - math.exp(-param_2_term_shape * (param2 / max_param_2))) / (1 - math.exp(-param_2_term_shape))
-        min_radius_term = math.exp((-(min_radius / max_radius) ** 2))
+        # param_2_term_shape = Params.params['circle_detector_objective_function_param_2_term_shape']
+        # param2_term = (1 - math.exp(-param_2_term_shape * (param2 / max_param_2))) / (1 - math.exp(-param_2_term_shape))
+        # min_radius_term = math.exp((-(min_radius / max_radius) ** 2))
         # PARAM: hough_circles_objective_function_min_radius_term_shape
-        min_radius_term_shape = Params.params['circle_detector_objective_function_min_radius_term_shape']
-        min_radius_term = (1 - (min_radius_term_shape[0] * (min_radius / max_radius - min_radius_term_shape[1]) ** 2))
+        # min_radius_term_shape = Params.params['circle_detector_objective_function_min_radius_term_shape']
+        # min_radius_term = (1 - (min_radius_term_shape[0] * (min_radius / max_radius - min_radius_term_shape[1]) ** 2))
         # PARAM: hough_circles_param_2_weight
-        min_radius_weight = Params.params['circle_detector_min_radius_weight']
-        return param2_term + min_radius_weight * min_radius_term
+        # min_radius_weight = Params.params['circle_detector_min_radius_weight']
+        return param2
 
 
 def draw_circles(image, circles):

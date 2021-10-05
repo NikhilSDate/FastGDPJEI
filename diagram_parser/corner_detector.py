@@ -21,12 +21,22 @@ def get_corners(image):
     # PARAM corner_detector_gaussian_blur_sigma
     blur_params = Params.params['corner_detector_gaussian_blur_params']
     masked = cv2.GaussianBlur(masked, (blur_params[0], blur_params[0]), blur_params[1])
-    # PARAM harris__sobel_ksize
+    # PARAM harris_sobel_ksize
     # PARAM harris_blocksize
     # PARAM harris_k
     harris_params = Params.params['corner_harris_params']
     corners = cv2.cornerHarris(masked, harris_params[0], harris_params[1], harris_params[2])
     dilated_corners = cv2.dilate(corners, None)
+    twice_dilated = cv2.dilate(dilated_corners, None)
+    scaled = twice_dilated / twice_dilated.max()
+    scaled *= 255
+    scaled = np.maximum(np.zeros_like(scaled), scaled)
+    int_image = np.zeros_like(scaled, dtype=np.uint8)
+    for i in range(scaled.shape[0]):
+        for j in range(scaled.shape[1]):
+            int_image[i][j] = round(scaled[i][j])
+    _, int_image = cv2.threshold(int_image, 1, 255, cv2.THRESH_BINARY)
+
     filtered_dest = np.zeros_like(dilated_corners)
     # PARAM corner_detector_corner_threshold
     is_corner_thresh = Params.params['corner_detector_is_corner_threshold']
@@ -34,7 +44,7 @@ def get_corners(image):
     uint8_filtered_dest = np.uint8(filtered_dest)
     (_, components, _, centroids), _, _ = connected_components_and_threshold(uint8_filtered_dest)
 
-    return centroids[1:]
+    return int_image, centroids[1:]
 
 
 def draw_corners(image, points):
@@ -45,8 +55,5 @@ def draw_corners(image, points):
     return image_copy
 
 
-# img = cv2.imread('../aaai/038.png')
+# img = cv2.imread('../experiments/data/images/0030.png')
 # corners = get_corners(img)
-# image_with_corners = draw_corners(img, corners[1:])
-# cv2.imshow('image with corners', image_with_corners)
-# cv2.waitKey()

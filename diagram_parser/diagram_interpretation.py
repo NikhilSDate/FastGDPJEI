@@ -51,6 +51,8 @@ class Interpretation:
 
     def set_circles(self, circles):
         self.circles = circles
+    def __len__(self):
+        return len(self.points)
 
 
 

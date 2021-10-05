@@ -3,11 +3,12 @@ import numpy as np
 
 class Params:
     params = {"hough_circles_param_1": 50, "hough_circles_param_2_range": (1, 100),
-              "circle_detector_objective_function_param_2_term_shape": 5,
-              "circle_detector_objective_function_min_radius_term_shape": (1.25, 0.2),
-              "circle_detector_min_radius_weight": 0.5,
+              # "circle_detector_objective_function_param_2_term_shape": 5,
+              # "circle_detector_objective_function_min_radius_term_shape": (1.25, 0.2),
+              # "circle_detector_min_radius_weight": 0.5,
               "circle_detector_is_a_circle_threshold": 70,
               "circle_detector_clustering_epsilon": 0.1,
+              "min_radius_factor": 0.2,
               "line_detector_close_enough_angle_threshold": 0.1,
               "line_detector_close_enough_rho_threshold": 0.075,
               "line_detector_canny_params": (50, 150, 3),

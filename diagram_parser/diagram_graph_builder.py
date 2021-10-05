@@ -40,7 +40,7 @@ def is_triple_consistent(triples, triple):
     return consistent
 
 
-def calculate_intersection(structure1, structure2):
+def calculate_intersection(structure1, structure2, corner_response_map):
     if ((structure1.shape[0] == 3) and (structure2.shape[0] == 2)) or (
             (structure1.shape[0] == 2) and (structure2.shape[0] == 3)):
         if structure1.shape[0] == 3:
@@ -85,7 +85,24 @@ def calculate_intersection(structure1, structure2):
             solution1 = (float(solutions[0][0].evalf()), float(solutions[0][1].evalf()))
 
             solution2 = (float(solutions[1][0].evalf()), float(solutions[1][1].evalf()))
-            return [solution1, solution2]
+            valid_sols = []
+            try:
+                if corner_response_map[int(solution1[1])][int(solution1[0])] > 0:
+                    valid_sols.append(solution1)
+            except IndexError:
+                pass
+            try:
+                if corner_response_map[int(solution2[1])][int(solution2[0])] > 0:
+                    valid_sols.append(solution2)
+            except IndexError:
+                pass
+            if len(valid_sols) == 2:
+                return valid_sols
+            elif len(valid_sols) == 1:
+                return valid_sols[0]
+            else:
+                return None
+
 
     elif (structure1.shape[0] == 3) and (structure2.shape[0] == 3):
         x0 = structure1[0]
@@ -108,7 +125,23 @@ def calculate_intersection(structure1, structure2):
         solution1 = (float(solutions[0][0].evalf()), float(solutions[0][1].evalf()))
 
         solution2 = (float(solutions[1][0].evalf()), float(solutions[1][1].evalf()))
-        return [solution1, solution2]
+        valid_sols = []
+        try:
+            if corner_response_map[int(solution1[1])][int(solution1[0])] > 0:
+                valid_sols.append(solution1)
+        except IndexError:
+            pass
+        try:
+            if corner_response_map[int(solution2[1])][int(solution2[0])] > 0:
+                valid_sols.append(solution2)
+        except IndexError:
+            pass
+        if len(valid_sols) == 2:
+            return valid_sols
+        elif len(valid_sols) == 1:
+            return valid_sols[0]
+        else:
+            return None
 
 
     else:
@@ -119,8 +152,14 @@ def calculate_intersection(structure1, structure2):
         coefficients = np.array([[cos(theta1), sin(theta1)], [cos(theta2), sin(theta2)]])
         constants = np.array([rho1, rho2])
         try:
-            x = np.linalg.solve(coefficients, constants)
-            return x
+            solution = np.linalg.solve(coefficients, constants)
+
+            if corner_response_map[int(solution[1])][int(solution[0])] > 0:
+                return solution
+            else:
+                return None
+        except IndexError:
+            return None
         except np.linalg.LinAlgError:
             # Exception is thrown if lines are parallel
             return None
@@ -140,7 +179,7 @@ def point_to_line_distance(point_coordinates, line):
     return distance
 
 
-def get_merged_intersections(lines, circles, image_shape):
+def get_merged_intersections(lines, circles, image_shape, corner_response_map):
     intersections = dict()
     final_intersections = dict()
     if len(lines) > 0:
@@ -155,7 +194,7 @@ def get_merged_intersections(lines, circles, image_shape):
         structure_ids.append(f'c{i}')
     indices = itertools.combinations(structure_ids, 2)
     for idx, pair in zip(indices, structure_pairs):
-        intersection_point = calculate_intersection(pair[0], pair[1])
+        intersection_point = calculate_intersection(pair[0], pair[1], corner_response_map)
         if intersection_point is not None:
             if np.ndim(intersection_point) == 1:
                 if (0 <= intersection_point[0] <= image_shape[1]) and (0 <= intersection_point[1] <= image_shape[0]):
@@ -254,10 +293,9 @@ def get_primitives(image):
 
     lines = get_filtered_lines(filtered)
     circles = detect_circles(filtered)
-    intersections = get_merged_intersections(lines, circles, image.shape)
-    corners = get_corners(image)
+    response_map, corners = get_corners(image)
+    intersections = get_merged_intersections(lines, circles, image.shape, response_map)
     image_with_corners = draw_corners(image, corners)
-    # cv2.imshow('corners', image_with_corners)
     text_regions = text_components_with_centroids(image)
     return corners, lines, circles, intersections, text_regions
 
@@ -311,6 +349,7 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
     lower = []
     numbers = []
     for idx, coords in enumerate(text_regions.keys()):
+
         isupper = character_predictor.is_upper(text_regions[coords])
         if isupper:
             upper.append(Primitive(coords, 't', idx, character_type='upper'))
@@ -381,7 +420,7 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
         else:
             label = f'p{diagram_interpretation.num_points()}'
             point.add_label(label)
-        if len(point.properties) != 0:
+        if len(point.properties) != 0 :
             diagram_interpretation.add_point(point)
     point_projections = get_point_projections(lines, diagram_interpretation)
     number_search_queue = Queue()
@@ -461,12 +500,27 @@ def display_interpretation(image, interpretation, lines, circles):
     line_img = draw_lines(image, lines)
     circle_img = draw_circles(image, circles)
     cv2.imshow('lines', line_img)
-    # cv2.imshow('circles', circle_img)
-    # cv2.imshow('interpretation', image)
+    cv2.imshow('circles', circle_img)
+    cv2.imshow('interpretation', image)
     cv2.waitKey()
-
+# diagram = cv2.imread('test_images/El.I.47.diag.0-1.jpg')
+# interpretation, lines, circles = parse_diagran(diagram)
+# display_interpretation(diagram, interpretation, lines.values(), circles.values())
+# import os
+# import time
+# count = 0
+# selecting = 0
+# totalstart = time.time()
+# for filename in os.listdir('C:\\Users\cat\\PycharmProjects\\EuclideanGeometrySolver\\experiments\\data\\images'):
+#         print(filename)
 #
-# image = cv2.imread('../validation/images/0013.png')
-# interpretation, lines, circles = parse_diagran(image)
-# print(interpretation)
-# display_interpretation(image, interpretation, lines.values(), circles.values())
+#         diagram = cv2.imread('C:\\Users\cat\\PycharmProjects\\EuclideanGeometrySolver\\experiments\\data\\images\\'+filename)
+#         get_primitives(diagram)
+#         stop = time.time()
+#
+#
+#         count+=1
+#         print(f'files done: {count}\r')
+# totalstop = time.time()
+# print(totalstop-totalstart)
+# print(selecting)
