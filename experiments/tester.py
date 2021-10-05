@@ -55,7 +55,6 @@ def point_only_f1(ground_truth_interpretation, ground_truth_lines, ground_truth_
     matched_points = [False] * len(predicted_interpretation.points)
     point_match = dict()
     DISTANCE_THRESHOLD = 0.05*(image_size[0]+image_size[1])/2
-    # make this start from closest point
     for idx1, point1 in enumerate(ground_truth_interpretation):
         for idx2, point2 in enumerate(predicted_interpretation):
             if not matched_points[idx2] and distance(point1.coords,
@@ -79,6 +78,8 @@ def f1_score(ground_truth_interpretation, ground_truth_lines, ground_truth_circl
     matched_points = [False] * len(predicted_interpretation.points)
     point_match = dict()
     DISTANCE_THRESHOLD = 0.05*(image_size[0]+image_size[1])/2
+    # make this start from closest point
+
     for idx1, point1 in enumerate(ground_truth_interpretation):
         for idx2, point2 in enumerate(predicted_interpretation):
             if not matched_points[idx2] and distance(point1.coords,
