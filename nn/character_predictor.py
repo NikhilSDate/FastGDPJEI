@@ -56,6 +56,7 @@ class CharacterPredictor:
         img = np.reshape(bordered, newshape=(bordered.shape[0], bordered.shape[1], 1))
         img = np.expand_dims(img, axis=0)
         y_pred = self.model.predict(img, batch_size=1)
+        print(np.sum(y_pred))
         if character_mode == 'all':
             predicted_index = np.argmax(y_pred)
             character = self.labels[predicted_index]

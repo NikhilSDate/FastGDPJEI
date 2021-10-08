@@ -352,6 +352,7 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
 
         isupper = character_predictor.is_upper(text_regions[coords])
         if isupper:
+            # v2.imshow(str(idx), text_regions[coords][0])
             upper.append(Primitive(coords, 't', idx, character_type='upper'))
         else:
             numbers.append(Primitive(coords, 't', idx, character_type='upper'))
@@ -497,15 +498,14 @@ def display_interpretation(image, interpretation, lines, circles):
         int_coords = (int(point.coords[0]), int(point.coords[1]))
         cv2.circle(image, int_coords, 2, rgb.tolist(), -1)
         cv2.putText(image, point.labels[0], int_coords, cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0))
-    line_img = draw_lines(image, lines)
+    # line_img = draw_lines(image, lines)
     circle_img = draw_circles(image, circles)
-    cv2.imshow('lines', line_img)
+    # cv2.imshow('lines', line_img)
     cv2.imshow('circles', circle_img)
     cv2.imshow('interpretation', image)
     cv2.waitKey()
 # diagram = cv2.imread('test_images/El.I.47.diag.0-1.jpg')
-# interpretation, lines, circles = parse_diagran(diagram)
-# display_interpretation(diagram, interpretation, lines.values(), circles.values())
+
 # import os
 # import time
 # count = 0
@@ -515,7 +515,8 @@ def display_interpretation(image, interpretation, lines, circles):
 #         print(filename)
 #
 #         diagram = cv2.imread('C:\\Users\cat\\PycharmProjects\\EuclideanGeometrySolver\\experiments\\data\\images\\'+filename)
-#         get_primitives(diagram)
+#         interpretation, lines, circles = parse_diagran(diagram)
+#         display_interpretation(diagram, interpretation, lines.values(), circles.values())
 #         stop = time.time()
 #
 #
