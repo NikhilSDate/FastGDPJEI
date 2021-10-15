@@ -15,8 +15,10 @@ def distance(x1, y1, x2, y2):
 
 
 def get_corners(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    masked = remove_text(gray)
+#    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = image
+#    masked = remove_text(gray)
+    masked = image
     # PARAM corner_detector_gaussian_blur_ksize
     # PARAM corner_detector_gaussian_blur_sigma
     blur_params = Params.params['corner_detector_gaussian_blur_params']
@@ -27,8 +29,12 @@ def get_corners(image):
     harris_params = Params.params['corner_harris_params']
     corners = cv2.cornerHarris(masked, harris_params[0], harris_params[1], harris_params[2])
     dilated_corners = cv2.dilate(corners, None)
-    twice_dilated = cv2.dilate(dilated_corners, None)
-    scaled = twice_dilated / twice_dilated.max()
+    # PARAM corner_response_params
+    ksize = int(Params.params['corner_response_map_ksize'])
+    iters = int(Params.params['corner_response_map_iters'])
+    kernel = np.ones((ksize, ksize), dtype=np.uint8)
+    response_map = cv2.dilate(corners, kernel=kernel, iterations=iters)
+    scaled = response_map / response_map.max()
     scaled *= 255
     scaled = np.maximum(np.zeros_like(scaled), scaled)
     int_image = np.zeros_like(scaled, dtype=np.uint8)

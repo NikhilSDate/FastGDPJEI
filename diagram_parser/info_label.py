@@ -14,6 +14,8 @@ class InfoLabel:
         return self.label.coords
     def set_coords(self, coords):
         self.label.coords = coords
+    def scale_coords(self, factor):
+        self.label.coords *= factor
 
     def weight(self, primitive_groups, lines, point_projections):
         if self.type == 'l':

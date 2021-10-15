@@ -177,6 +177,14 @@ def point_to_line_distance(point_coordinates, line):
     y = point_coordinates[1]
     distance = abs(A * x + B * y + C) / sqrt(A ** 2 + B ** 2)
     return distance
+def point_to_circle_distance(point_coords, circle):
+
+    center = [circle[0], circle[1]]
+
+    r = circle[2]
+
+    distance = abs(r-(np.linalg.norm(np.subtract(point_coords, center))))
+    return distance
 
 
 def get_merged_intersections(lines, circles, image_shape, corner_response_map):
@@ -293,17 +301,16 @@ def get_primitives(image):
 
     lines = get_filtered_lines(filtered)
     circles = detect_circles(filtered)
-    response_map, corners = get_corners(image)
+    response_map, corners = get_corners(filtered)
     intersections = get_merged_intersections(lines, circles, image.shape, response_map)
     image_with_corners = draw_corners(image, corners)
     text_regions = text_components_with_centroids(image)
     return corners, lines, circles, intersections, text_regions
 
 
-def parse_diagran(diagram_image):
+def parse_diagram(diagram_image):
     corners, lines, circles, intersections, text_regions = get_primitives(diagram_image)
     primitives = list()
-
     for idx, intersection in enumerate(intersections.keys()):
         primitives.append(Primitive(intersection, 'i', idx))
     for idx, corner in enumerate(corners):
@@ -346,18 +353,17 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
         cluster_list[label].add(primitives[idx])
     # clean this up
     upper = []
-    lower = []
     numbers = []
     for idx, coords in enumerate(text_regions.keys()):
 
-        isupper = character_predictor.is_upper(text_regions[coords])
+        isupper, confidence = character_predictor.is_upper(text_regions[coords])
         if isupper:
-            # v2.imshow(str(idx), text_regions[coords][0])
-            upper.append(Primitive(coords, 't', idx, character_type='upper'))
+            upper.append((Primitive(coords, 't', idx, character_type='upper'), confidence))
         else:
             numbers.append(Primitive(coords, 't', idx, character_type='upper'))
         primitives.append(Primitive(coords, 't', idx, character_type='upper'))
-
+    sorted_upper = [item[0] for item in sorted(upper, key=lambda item:item[1], reverse=True)]
+    upper = sorted_upper
     search_queue = Queue()
     search_queue.put(SearchNode(primitives, lines, cluster_list))
     best_child = SearchNode(primitives, lines, cluster_list)
@@ -402,14 +408,21 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
                 point.set_coords(cluster.centroid('c'))
             line_set = set()
             corner_centroid = cluster.centroid('c')
+            eps = Params.params['diagram_parser_corner_lies_on_line_eps']
+
             for index, line in enumerate(lines):
                 # PARAM: diagram_parser_corner_lies_on_line_eps
-                eps = Params.params['diagram_parser_corner_lies_on_line_eps']
                 if point_to_line_distance(corner_centroid, line) < eps * (image_shape[0] + image_shape[1]) / 2:
                     line_set.add(index)
             for line in line_set:
                 point.add_property('lieson', f'l{line}')
-            # TODO: ADD CIRCLE DETECTION HERE
+            circle_set = set()
+            for index, circle in enumerate(circles):
+                if point_to_circle_distance(corner_centroid, circle) < eps * (image_shape[0] + image_shape[1]) / 2:
+                    circle_set.add(index)
+            for index in circle_set:
+                point.add_property('lieson', f'c{index}')
+
         if cluster.contains('t'):
             for text_primitive in cluster.primitives['t']:
                 text_region = list(text_regions.values())[text_primitive.index]
@@ -496,32 +509,39 @@ def display_interpretation(image, interpretation, lines, circles):
         hsv = np.uint8([[[hue, 255, 255]]])
         rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]
         int_coords = (int(point.coords[0]), int(point.coords[1]))
+
         cv2.circle(image, int_coords, 2, rgb.tolist(), -1)
-        cv2.putText(image, point.labels[0], int_coords, cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0))
-    # line_img = draw_lines(image, lines)
+
+        cv2.putText(image, point.labels[0], int_coords, cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 0))
+    line_img = draw_lines(image, lines)
     circle_img = draw_circles(image, circles)
-    # cv2.imshow('lines', line_img)
+    cv2.imshow('lines', line_img)
     cv2.imshow('circles', circle_img)
     cv2.imshow('interpretation', image)
     cv2.waitKey()
-# diagram = cv2.imread('test_images/El.I.47.diag.0-1.jpg')
-
+# diagram = cv2.imread('../experiments/data/images/0001.png')
+# interpretation, lines, circles = parse_diagram(diagram)
+# display_interpretation(diagram, interpretation, lines.values(), circles.values())
+# cv2.destroyAllWindows()
 # import os
 # import time
 # count = 0
 # selecting = 0
 # totalstart = time.time()
-# for filename in os.listdir('C:\\Users\cat\\PycharmProjects\\EuclideanGeometrySolver\\experiments\\data\\images'):
-#         print(filename)
+# for filename in os.listdir('../symbols/'):
+#         if filename.endswith('.png'):
+#             print(filename)
 #
-#         diagram = cv2.imread('C:\\Users\cat\\PycharmProjects\\EuclideanGeometrySolver\\experiments\\data\\images\\'+filename)
-#         interpretation, lines, circles = parse_diagran(diagram)
-#         display_interpretation(diagram, interpretation, lines.values(), circles.values())
-#         stop = time.time()
+#             diagram = cv2.imread('../symbols/'+filename)
+#
+#             interpretation, lines, circles = parse_diagram(diagram)
+#             display_interpretation(diagram, interpretation, lines.values(), circles.values())
+#             cv2.destroyAllWindows()
+#             stop = time.time()
 #
 #
-#         count+=1
-#         print(f'files done: {count}\r')
+#             count+=1
+#             print(f'files done: {count}\r')
 # totalstop = time.time()
 # print(totalstop-totalstart)
 # print(selecting)

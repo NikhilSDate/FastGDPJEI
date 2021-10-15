@@ -92,6 +92,8 @@ def text_components_with_centroids(image):
         low = Params.params['text_detector_is_text_blob_low_thresh']
         high = Params.params['text_detector_is_text_blob_high_thresh']
         if low < stat[2]*stat[3] <= (high * image.shape[0] * image.shape[1]):
+            # cv2.imshow(str(idx), get_component_roi(image, stats, idx))
+            # cv2.waitKey()
             points = []
             for y in range(stat[1], stat[1] + stat[3]):
                 for x in range(stat[0], stat[0] + stat[2]):
@@ -148,6 +150,7 @@ def text_components_with_centroids(image):
             weighted_sum += centroids[index] * stats[index][4]
             total_area += stats[index][4]
             characters.append(get_component_roi(image, stats, index))
+
         centroid = weighted_sum / total_area
         text_regions[tuple(centroid)] = characters
     return text_regions
@@ -174,20 +177,5 @@ def resize_region(region, ):
              hierarchy[0][i][2] == -1 and hierarchy[0][i][3] != -1]
     inverted = cv2.cvtColor(cv2.bitwise_not(bordered), cv2.COLOR_GRAY2BGR)
     cv2.drawContours(inverted, contours, 1, thickness=1, color=[255, 0, 0])
-
-# img = cv2.imread('../aaai/ncert2.png')
-# text_regions = text_components_with_centroids(img)
-# text_region = list(text_regions.values())[2]
-# shape = text_region.shape
-# max_shape = max(shape[0], shape[1])
-# width_padding = int((max_shape - shape[0]) / 2)
-# height_padding = int((max_shape - shape[1]) / 2)
-# bordered = cv2.copyMakeBorder(text_region, width_padding + 2, width_padding + 2, height_padding + 2, height_padding + 2,
-#                               borderType=cv2.BORDER_CONSTANT, value=(255, 255, 255))
-# img = np.reshape(bordered, newshape=(bordered.shape[0], bordered.shape[1], 1))
-# img = np.expand_dims(img, axis=0)
-# model = models.load_model('../nn/bayes_optimized_character_model.h5')
-# y_pred = model.predict(img, batch_size=1)
-# print(np.argmax(y_pred))
-# cv2.imshow('text_region', bordered)
-# cv2.waitKey()
+# image = cv2.imread('../symbols/100.png')
+# components = text_components_with_centroids(image)

@@ -20,8 +20,8 @@ class CharacterPredictor:
         self.labels = {i: valid_characters[i] for i in range(len(valid_characters))}
         if CharacterPredictor.confused_labels is None:
             CharacterPredictor.confused_labels = self.initialize_confused_labels()
-
-    def predict_character(self, image, character_mode='all'):
+    def preprocess_image(self, image):
+        # TODO: pad after resizing
         shape = image.shape
         y = shape[0]
         x = shape[1]
@@ -50,13 +50,18 @@ class CharacterPredictor:
             bottom = 0
             left = 0
             right = 0
+
         bordered = cv2.copyMakeBorder(image, top=top+2, bottom=bottom+2, left=left+2, right=right+2,
-                                      borderType=cv2.BORDER_CONSTANT, value=(255, 255, 255))
+                                       borderType=cv2.BORDER_CONSTANT, value=(255, 255, 255))
         bordered= cv2.resize(bordered, (14, 14), interpolation=cv2.INTER_LINEAR)
+
+
         img = np.reshape(bordered, newshape=(bordered.shape[0], bordered.shape[1], 1))
         img = np.expand_dims(img, axis=0)
+        return img
+    def predict_character(self, image, character_mode='all'):
+        img = self.preprocess_image(image)
         y_pred = self.model.predict(img, batch_size=1)
-        print(np.sum(y_pred))
         if character_mode == 'all':
             predicted_index = np.argmax(y_pred)
             character = self.labels[predicted_index]
@@ -87,17 +92,20 @@ class CharacterPredictor:
             predicted_index = np.argmax(y_pred[0, 36:]) + 36
             character = self.labels[predicted_index]
             return character
-
+    def upper_confidence(self, image):
+        img = self.preprocess_image(image)
+        y_pred = self.model.predict(img, batch_size=1)
+        return np.sum(y_pred[0, 10:36])
     def is_upper(self, character_sequence):
         is_upper = True
         for character_image in character_sequence:
             mode = Params.params['character_detector_mode']
-            character = self.predict_character(character_image, character_mode='smart')
+            character = self.predict_character(character_image, character_mode=mode)
 
             if not character.isupper():
                 is_upper = False
                 break
-        return is_upper
+        return is_upper, self.upper_confidence(character_sequence[0])
 
     def initialize_confused_labels(self):
         test_datagen = ImageDataGenerator(rescale=1 / 255, validation_split=0.2)
@@ -109,6 +117,7 @@ class CharacterPredictor:
         y_pred = np.argmax(Y_pred, axis=1)
         confusion_matrix = metrics.confusion_matrix(validation_data.classes, y_pred)
         # PARAM confusion threshold
+        # confusion_threshold = Params.params['character_detector_confusion_threshold']
         confusion_threshold = Params.params['character_detector_confusion_threshold']
         confused_indices = np.transpose(np.where(confusion_matrix > confusion_threshold))
         confused_indices_array = np.array([confused_indices[i] for i in range(len(confused_indices)) if

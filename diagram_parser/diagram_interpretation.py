@@ -54,5 +54,10 @@ class Interpretation:
     def __len__(self):
         return len(self.points)
 
+    def multiply_coords(self, factor):
+        for point in self.points:
+            point.scale_coords(factor)
+        for info_label in self.info_labels:
+            info_label.scale_coords(factor)
 
 

@@ -1,4 +1,5 @@
-class Point():
+import numpy as np
+class Point:
     def __init__(self):
         self.labels = list()
         self.properties = set()
@@ -18,5 +19,4 @@ class Point():
     def num_properties(self):
         return len(self.properties)
     def scale_coords(self, scale_factor):
-
-        self.coords = [self.coords[0]*scale_factor, self.coords[1]*scale_factor]
+        self.coords = np.array([self.coords[0]*scale_factor, self.coords[1]*scale_factor])

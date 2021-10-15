@@ -3,8 +3,11 @@ import numpy as np
 from experiments.params import Params
 from numpy import arctan2
 from math import sqrt
+from math import pi
 import os
 from diagram_parser.text_detector import remove_text
+import matplotlib.pyplot as plt
+from sklearn.cluster import AgglomerativeClustering, DBSCAN
 
 
 def preprocess(img):
@@ -63,6 +66,32 @@ def filter_lines(lines, image_size):
             filtered_lines.append(average_line)
 
     return filtered_lines
+def clustering_filter(lines, image_size):
+    hesse_lines = [np.array(hesse_normal_form(endpoints)) for endpoints in lines]
+    x = np.array([line[0] for line in hesse_lines])
+    y = np.array([line[1] for line in hesse_lines])
+    x /= max(image_size[0], image_size[1])
+    y /= 2 * pi
+    # plt.xlim(0, 1)
+    # plt.ylim(0, 1)
+    # clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.075, affinity=cylindrical_similarity)
+    eps = Params.params['line_detector_clustering_eps']
+    clustering = DBSCAN(eps=eps, min_samples=1, metric=cylindrical_similarity)
+    clustering.fit(list(zip(x, y)))
+    # plt.scatter(x, y, c=clustering.labels_.astype(float))
+    # plt.show()
+    cluster_dict = {}
+    for idx, label in enumerate(clustering.labels_):
+        if label in cluster_dict:
+            cluster_dict[label].append(hesse_lines[idx])
+        else:
+            cluster_dict[label] = [hesse_lines[idx]]
+    averaged_lines = []
+    for _, lines in cluster_dict.items():
+        averaged_lines.append(average_lines(lines))
+    return averaged_lines
+
+
 def filter_lines_p(lines_p, image_size):
     accepted_line_groups = list()
     while len(lines_p) > 0:
@@ -162,7 +191,26 @@ def hesse_normal_form(line):
     negative_rho = C/sqrt(A**2+B**2)
     rho = -negative_rho
     theta = arctan2(sine, cosine)
-    return rho, theta
+
+    return convert_to_positive([rho, theta])
+def cylindrical_similarity(l1, l2):
+    rho_diff = abs(l1[0]-l2[0])
+    theta_diff = abs(l1[1] - l2[1])
+    theta_diff = min(theta_diff, 1-theta_diff)
+    return sqrt(rho_diff**2+theta_diff**2)
+def average_lines(lines):
+    min_theta = np.min(lines, axis=0)[1]
+    max_theta = np.max(lines, axis=0)[1]
+    if max_theta-min_theta > np.pi/2:
+        fixed_lines = []
+        for lines in lines:
+            if 2*pi-lines[1] < lines[1]:
+                fixed_lines.append([lines[0], lines[1]-2*pi])
+            else:
+                fixed_lines.append([lines[0], lines[1]])
+        return np.mean(fixed_lines, axis=0)
+    else:
+        return np.mean(lines, axis=0)
 
 
 def get_hough_lines(img):
@@ -188,19 +236,25 @@ def get_hough_lines_p(img):
 def draw_lines(img, lines):
     img_copy = img.copy()
     for line in lines:
-        x1 = line[0]
-        y1 = line[1]
-        x2 = line[2]
-        y2 = line[3]
-        cv2.line(img_copy, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
+        rho = line[0]
+        theta = line[1]
+        a = np.cos(theta)
+        b = np.sin(theta)
+        x0 = a * rho
+        y0 = b * rho
+        x1 = int(x0 + 1000 * (-b))
+        y1 = int(y0 + 1000 * (a))
+        x2 = int(x0 - 1000 * (-b))
+        y2 = int(y0 - 1000 * (a))
+
+        cv2.line(img_copy, (x1, y1), (x2, y2), (0, 0, 255), 2)
     return img_copy
 
     # plt.hist(distances_list,density=True,bins=30)
     # plt.show()
 
 
-def get_filtered_lines(img):
-    # TODO: FIX BUG IN LINE RMS SUPPRESSION
+def get_filtered_lines(img, filter_method='cluster'):
     mode = Params.params['line_detector_mode']
     if mode == 'hough':
         hough_lines = get_hough_lines(img)
@@ -211,28 +265,63 @@ def get_filtered_lines(img):
             filtered_lines = filter_lines(hough_lines, img.shape)
             return filtered_lines
     elif mode == 'hough_p_hesse':
+        cv2.destroyAllWindows()
         resize_image = Params.params['resize_image_if_too_big']
         resize_dim = Params.params['resize_dim']
         max_dimension = max(img.shape[0], img.shape[1])
         if max_dimension > resize_dim and resize_image:
             factor = resize_dim/max_dimension
             img = cv2.resize(img, (0, 0), fx=factor, fy=factor)
-
         else:
             factor = 1
         hough_lines_p = get_hough_lines_p(img)
         hough_lines_p = np.multiply(hough_lines_p, 1 / factor)
-        if hough_lines_p is None:
+        if hough_lines_p is None or len(hough_lines_p) == 0:
             return np.array([])
         else:
-            filtered_lines = filter_lines_p(hough_lines_p, img.shape)
-           #  return hough_lines_p
-            hesse_lines = [np.array(hesse_normal_form(endpoints_line)) for endpoints_line in filtered_lines]
-            return hesse_lines
-# for filename in os.listdir(
-#         'C:\\Users\cat\\PycharmProjects\\EuclideanGeometrySolver\\experiments\\data\\images'):
-#     diagram = cv2.imread('C:\\Users\cat\\PycharmProjects\\EuclideanGeometrySolver\\experiments\\data\\images\\' + filename)
-#     lines = get_filtered_lines(diagram)
-#
-#     cv2.imshow('lines', draw_lines(diagram, lines))
-#     cv2.waitKey()
+            if filter_method == 'cluster':
+                filtered_lines = clustering_filter(hough_lines_p, np.array(np.array(img.shape)*1/factor))
+                # cv2.imshow('lines', draw_lines(cv2.resize(img, (0, 0), fx=1/factor, fy=1/factor), filtered_lines))
+                # cv2.waitKey()
+                return filtered_lines
+            else:
+                filtered_lines = filter_lines_p(hough_lines_p, np.array(np.array(img.shape)*1/factor))
+                hesse_lines = [np.array(hesse_normal_form(endpoints_line)) for endpoints_line in filtered_lines]
+                return hesse_lines
+
+# diagram = cv2.imread('../experiments/data/images/0032.png')
+# gray = cv2.cvtColor(diagram, cv2.COLOR_BGR2GRAY)
+# gray = remove_text(gray)
+# new_lines = get_filtered_lines(gray, 'cluster')
+# old_lines = get_filtered_lines(gray, 'all')
+# cv2.imshow('new lines', draw_lines(diagram, new_lines))
+# cv2.imshow('old lines', draw_lines(diagram.copy(), old_lines))
+# cv2.waitKey()
+# import os
+# import time
+# count = 0
+# selecting = 0
+# totalstart = time.time()
+# for filename in os.listdir('../symbols/'):
+#         if filename.endswith('.png'):
+#             diagram = cv2.imread('../symbols/'+filename)
+#             gray = cv2.cvtColor(diagram, cv2.COLOR_BGR2GRAY)
+#             gray = remove_text(gray)
+#             old_lines = get_filtered_lines(gray)
+#             new_lines = get_filtered_lines(gray, 'cluster')
+#             cv2.imshow('new lines', draw_lines(diagram, new_lines))
+#             cv2.imshow('old lines', draw_lines(diagram.copy(), old_lines))
+#             cv2.waitKey()
+#             # plt.show()
+#             cv2.destroyAllWindows()
+#             print(f'files done: {count}\r')
+#             print(filename)
+
+# plt.xlim(0, 1)
+# plt.ylim(0, 1)
+# filtered_lines = get_filtered_lines(gray)
+# cv2.imshow('lines', draw_lines(diagram, averaged_lines))
+# cv2.imshow('old lines', draw_lines(diagram.copy(), filtered_lines))
+# # plt.scatter(x, y)
+# # plt.show()
+# cv2.waitKey()

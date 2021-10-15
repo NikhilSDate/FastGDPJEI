@@ -23,20 +23,26 @@ class ParamOptimizer:
         self.validation = set(files).difference(self.training)
 
     def run_trial(self, input_path, output_path, space, max_evals):
+
+
         if input_path is None:
             trials = self.get_initial_trials(space)
         else:
             with open(input_path, 'rb') as f:
                 trials = pickle.load(f)
+
         objective = lambda args: self.objective(args, self.training)
         best = fmin(objective, space, algo=atpe.suggest, max_evals=max_evals, trials=trials)
         with open(output_path, 'wb+') as f:
             pickle.dump(trials, f)
+
     def get_initial_trials(self, space):
+
         init_values = {}
         for key, _ in space.items():
             init_values[key] = Params.params[key]
         return generate_trials_to_calculate([init_values])
+
     def get_prititive_optimization_space(self):
         space = dict()
         space['min_radius_factor'] = hp.uniform('min_radius_factor', 0.05, 0.4)
@@ -60,23 +66,26 @@ class ParamOptimizer:
         space['text_detector_is_text_blob_high_thresh'] = hp.uniform('text_detector_is_text_blob_high_thresh', 0.005,
                                                                      0.1)
         space['diagram_graph_builder_dbscan_eps'] = hp.uniform('diagram_graph_builder_dbscan_eps', 0.01, 0.2)
+        space['corner_response_map_ksize'] = hp.quniform('corner_response_map_ksize', 1, 15, 1)
+        space['corner_response_map_iters'] = hp.quniform('corner_response_map_iters', 1, 10, 1)
+        space['character_detector_confusion_threshold'] = hp.quniform('character_detector_confusion_threshold', 10, 100, 1)
         return space
 
     @staticmethod
     def point_optimization_objective(args, image_set):
         Params.update_params(args)
-        f1_scores, total_precision, total_recall = run_test('data/images', 'data/annotations.xml', image_set)
-        print(total_precision, total_recall)
-        f1_scores = np.array(f1_scores)
-        loss = np.sum((1 - f1_scores) ** 2)
-        return loss
+        file_scores, total_precision, total_recall = run_test('data/images', 'data/annotations.xml', image_set)
+        total_f1 = 2*total_precision*total_recall/(total_precision+total_recall)
+        with open('new_filtering.pickle', 'wb+') as f:
+            pickle.dump(file_scores, f)
+        return -total_f1
 
     @staticmethod
     def primitive_optimization_objective(args, image_set):
         Params.update_params(args)
-        total_precision, total_recall = run_primitive_test('data/images', 'data/annotations.xml', image_set)
+        total_precision, total_recall = run_primitive_test('../aaai', '../aaai/annotations_3.xml', image_set)
         f1 = 2 * total_precision * total_recall / (total_precision + total_recall)
-        return 1-f1
+        return 1 - f1
 
     @staticmethod
     def get_best_params(fp, space):
@@ -90,44 +99,18 @@ class ParamOptimizer:
         return space_eval(space, best_params)
 
 
-optimizer = ParamOptimizer(ParamOptimizer.primitive_optimization_objective, 'data/annotations.xml', 'data/images')
-print(ParamOptimizer.point_optimization_objective({}, None))
+optimizer = ParamOptimizer(ParamOptimizer.point_optimization_objective, 'data/annotations.xml', 'data/images')
+# optimizer.run_trial('optimization_results/point_detection_new/1.pickle', 'optimization_results/point_detection_new/2.pickle', optimizer.get_point_optimization_space(), 50)
+print(ParamOptimizer.point_optimization_objective({}, optimizer.training))
 
+# with open('old_filtering.pickle', 'rb+') as f:
+#     old_scores = pickle.load(f)
+# with open('new_filtering.pickle', 'rb+') as f:
+#     new_scores = pickle.load(f)
+# for key, _ in old_scores.items():
+#     if new_scores[key][3]<old_scores[key][3]:
+#         print(key)
+#         print(f'new scores: {new_scores[key]}')
+#         print(f'old scores: {old_scores[key]}')
+#         print()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# with open('optimization_results/primitive_detection_with_stopping/2.pickle', 'rb+') as f:
-#     trials = pickle.load(f)
-# validation_losses = []
-# count = 0
-# for trial in trials.trials:
-#
-#     raw_params = trial['misc']['vals']
-#     params = dict()
-#     for key, value in raw_params.items():
-#         # remove array
-#         params[key] = value[0]
-#
-#     params = space_eval(space, params)
-#     before = round(time.time() * 1000)
-#     validation_losses.append(ParamOptimizer.primitive_optimization_objective(params, optimizer.validation))
-#     after = round(time.time() * 1000)
-#     count += 1
-#     if count == 25:
-#         break
-#     print(f'trials done {count}. {round((after-before)/1000)}s/trial')
-# with open('optimization_results/primitive_detection_with_stopping/val_results', 'wb+') as f:
-#     pickle.dump(validation_losses, f)
