@@ -68,6 +68,25 @@ Due to the nature of the Chars64k dataset, the network often confuses the upperc
 Next, when recognizing the letter in each text region, if the letter detected by the network is a lowercase letter that is frequently confused by the model with its uppercase form, the uppercase form of the letter is returned.
 Here, 'frequently confused' means that the entry for the lowercase letter-uppercase letter pair in the confusion matrix is above a certain threshold.
 
+## Putting it all together
+
+To determine the locations of the points in the image, the intersection point or points for every line-line, line-circle, or circle-circle pair is determined.
+The intersections are filtered based on the harris corner response map as described in the corner detector section.
+The intersections are now put together with the corner points detected (using the method described in the corner detector section) and are clustered using the DBSCAN algorithm.
+Next, the text regions are associated with the clustered points using a greedy method. The text regions are first sorted based on the text detector's confidence that the text region is an uppercase letter.
+Then, each text region is associated with the point that maximizes the following score.
+
+Do nothing: score = 0
+
+If point has more than one label: score = -infinity
+
+if point contains at least one intersection: score = offset - distance between centroid(intersection points) and text region
+
+else: score = offset - distance between centroid(corners) and text region
+
+offset is a parameter that controls the distance beyond which doing nothing is better than associating the text region with the point.
+
+
 
 
 

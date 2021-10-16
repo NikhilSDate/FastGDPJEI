@@ -66,7 +66,8 @@ class PrimitiveGroup:
     :return:
     '''
     def weight(self, offset=0):
-
+        if len(self.primitives['t']) > 1:
+            return -9999
         weight = 0
         if self.contains('i'):
             i_centroid = self.centroid('i')
