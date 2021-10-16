@@ -36,3 +36,41 @@ Clustering is now applied to both the lines and circles in order to remove dupli
 After the lines and circles are detected, intersection points between the lines and circles and corners are detected. The intersections are corners are then clustered. This provides information about the points in the diagram image.
 A convolutional neural network trained on the Chars64k dataset is then used to recognize the character in each text region. Next, the text regions are associated with the points. Finally, the properties for every point are determined.
 
+## The line detector
+
+Before lines are detected, the text is removed from the image using connected component analysis.
+Next, the Probabilistic Hough Transform is used to detect lines in the image. Even though the Probabilistic Hough Transform returns the endpoints of the lines, the lines detected do not always cover the entire ground truth line on the diagram.
+So, the lines are converted to the Hesse normal form to make them infinite. The main disadvantage of theis system is that intersections between lines can be detected which are actually not in the diagram. 
+To combat this problem, only those intersection points are considered which are in a region containing a corner. For more information about this, look in the corner detector section.
+the At this stage, there could be some duplicate lines. So, the lines are clustered in the rho-theta space using the DBSCAN clustering algorithm.
+Instead of using a standard Euclidean metric, since the rho theta space is essentially in cylindrical coordinates, a different metric is used.
+After the lines are clustered, the average of each cluster is calculated. The averaged lines are finally returned.
+
+## The circle detector
+
+To detect circles, minRadius, maxRadius, and param1 are fixed. Next, the highest value of param2 in the range [0, 100] is determined for which at least one circle is detected. This generally tends to give good results unless the image contains multiple circles with very large differences in radii.
+Even after selecting the best value of param2, duplicate circles might be detected. So, the centers of the circles are clustered, and for each cluster, the centers and radii are both averaged. 
+The averaged circles are finally returned.
+
+## The corner detector
+
+The standard Harris Corner Detector is used to detect corners. The Harris response map is dilated and the connected components in the response map are determined.
+The connected components in the corner response map are now determined and the centroid of each component is detected as a corner.
+The original (non-dilated) response from the corner detector is now copied and dilated again with a larger kernel size than in the first dilation.
+This dilated response map is used to determine if a detected intersection point is indeed an intersection in the image. The intersection is accepted if it lies in a corner region in the harris corner map.
+
+## The text detector
+
+To detect text regions in the image, the image is thresholded, and the connected components in the thresholded image are determined, Next, the connected components are filtered by size to filter out the main diagram component and salt and pepper noise.
+The text regions are then padded to make them square and are then fed into a convolutional neural network trained on the Chars64k dataset. The netword is trained to recognize lowercase letters, uppercase letters, and digits. 
+This tool assumes that all points in the diagram will be labelled with uppercase letters. 
+Due to the nature of the Chars64k dataset, the network often confuses the uppercase and lowercase forms of some letters. To combat this issue, first, the confusion matrix of the model on the validation data is computed.
+Next, when recognizing the letter in each text region, if the letter detected by the network is a lowercase letter that is frequently confused by the model with its uppercase form, the uppercase form of the letter is returned.
+Here, 'frequently confused' means that the entry for the lowercase letter-uppercase letter pair in the confusion matrix is above a certain threshold.
+
+
+
+
+
+
+

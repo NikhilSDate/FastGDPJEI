@@ -304,6 +304,7 @@ def get_primitives(image):
     response_map, corners = get_corners(filtered)
     intersections = get_merged_intersections(lines, circles, image.shape, response_map)
     image_with_corners = draw_corners(image, corners)
+    # cv2.imshow('corners', image_with_corners)
     text_regions = text_components_with_centroids(image)
     return corners, lines, circles, intersections, text_regions
 
@@ -528,14 +529,15 @@ def display_interpretation(image, interpretation, lines, circles):
 # count = 0
 # selecting = 0
 # totalstart = time.time()
-# for filename in os.listdir('../symbols/'):
+# for filename in os.listdir('../experiments/data/images'):
 #         if filename.endswith('.png'):
 #             print(filename)
 #
-#             diagram = cv2.imread('../symbols/'+filename)
+#             diagram = cv2.imread('../experiments/data/images/'+filename)
 #
 #             interpretation, lines, circles = parse_diagram(diagram)
-#             display_interpretation(diagram, interpretation, lines.values(), circles.values())
+#             cv2.waitKey()
+#             # display_interpretation(diagram, interpretation, lines.values(), circles.values())
 #             cv2.destroyAllWindows()
 #             stop = time.time()
 #
