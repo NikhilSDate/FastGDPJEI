@@ -529,18 +529,18 @@ def display_interpretation(image, interpretation, lines, circles):
 # count = 0
 # selecting = 0
 # totalstart = time.time()
-# for filename in os.listdir('../experiments/data/images'):
+# for filename in os.listdir('../validation/images'):
 #         if filename.endswith('.png'):
 #             print(filename)
 #
-#             diagram = cv2.imread('../experiments/data/images/'+filename)
+#             diagram = cv2.imread('../validation/images/'+filename)
 #
 #             interpretation, lines, circles = parse_diagram(diagram)
 #             cv2.waitKey()
-#             # display_interpretation(diagram, interpretation, lines.values(), circles.values())
+#             display_interpretation(diagram, interpretation, lines.values(), circles.values())
 #             cv2.destroyAllWindows()
 #             stop = time.time()
-#
+#             print(time.time()-totalstart)
 #
 #             count+=1
 #             print(f'files done: {count}\r')

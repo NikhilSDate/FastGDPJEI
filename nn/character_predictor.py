@@ -4,6 +4,8 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from experiments.params import Params
 import string
 import cv2.cv2 as cv2
+from cv2 import dnn_superres
+
 import numpy as np
 from sklearn import metrics
 
@@ -20,6 +22,7 @@ class CharacterPredictor:
         self.labels = {i: valid_characters[i] for i in range(len(valid_characters))}
         if CharacterPredictor.confused_labels is None:
             CharacterPredictor.confused_labels = self.initialize_confused_labels()
+
     def preprocess_image(self, image):
         # TODO: pad after resizing
         shape = image.shape
@@ -51,14 +54,25 @@ class CharacterPredictor:
             left = 0
             right = 0
 
-        bordered = cv2.copyMakeBorder(image, top=top+2, bottom=bottom+2, left=left+2, right=right+2,
-                                       borderType=cv2.BORDER_CONSTANT, value=(255, 255, 255))
-        bordered= cv2.resize(bordered, (14, 14), interpolation=cv2.INTER_LINEAR)
+        bordered = cv2.copyMakeBorder(image, top=top + 2, bottom=bottom + 2, left=left + 2, right=right + 2,
+                                      borderType=cv2.BORDER_CONSTANT, value=(255, 255, 255))
 
+        # sr = cv2.dnn_superres.DnnSuperResImpl_create()
+        # path = "EDSR_x3.pb"
+        # sr.readModel(path)
+        #
+        # # Set the desired model and scale to get correct pre- and post-processing
+        # sr.setModel("edsr", 3)
+        #
+        # # Upscale the image
+        # result = sr.upsample(image)
+        # cv2.imshow('resized image', result)
+        bordered = cv2.resize(bordered, (14, 14), interpolation=cv2.INTER_LINEAR)
 
         img = np.reshape(bordered, newshape=(bordered.shape[0], bordered.shape[1], 1))
         img = np.expand_dims(img, axis=0)
         return img
+
     def predict_character(self, image, character_mode='all'):
         img = self.preprocess_image(image)
         y_pred = self.model.predict(img, batch_size=1)
@@ -77,13 +91,15 @@ class CharacterPredictor:
         elif character_mode == 'smart':
             predicted_index = np.argmax(y_pred)
             character = self.labels[predicted_index]
-            if predicted_index < 10:
-                return character
+            if (character, character.swapcase()) in self.confused_labels:
+                return character.upper()
             else:
-                if (character, character.swapcase()) in self.confused_labels:
-                    return character.upper()
-                else:
-                    return character
+                for letter in string.ascii_letters:
+                    if (character, letter) in self.confused_labels:
+                        return letter.upper()
+
+                return character
+
         elif character_mode == 'uppercase':
             predicted_index = np.argmax(y_pred[0, 10:36]) + 10
             character = self.labels[predicted_index]
@@ -92,10 +108,12 @@ class CharacterPredictor:
             predicted_index = np.argmax(y_pred[0, 36:]) + 36
             character = self.labels[predicted_index]
             return character
+
     def upper_confidence(self, image):
         img = self.preprocess_image(image)
         y_pred = self.model.predict(img, batch_size=1)
         return np.sum(y_pred[0, 10:36])
+
     def is_upper(self, character_sequence):
         is_upper = True
         for character_image in character_sequence:
@@ -123,5 +141,6 @@ class CharacterPredictor:
         confused_indices_array = np.array([confused_indices[i] for i in range(len(confused_indices)) if
                                            confused_indices[i][0] != confused_indices[i][1]])
         map_function = lambda x: (self.labels[int(x[0])], self.labels[int(x[1])])
+
         confused_labels = set([map_function(confused_index) for confused_index in confused_indices_array])
         return confused_labels

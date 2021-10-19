@@ -74,16 +74,16 @@ class ParamOptimizer:
     @staticmethod
     def point_optimization_objective(args, image_set):
         Params.update_params(args)
-        file_scores, total_precision, total_recall = run_test('data/images', 'data/annotations.xml', image_set)
+        file_scores, total_precision, total_recall = run_test('../aaai', '../aaai/annotations_3.xml', image_set)
         total_f1 = 2*total_precision*total_recall/(total_precision+total_recall)
-        with open('new_filtering.pickle', 'wb+') as f:
-            pickle.dump(file_scores, f)
+        print(total_precision, total_recall)
         return -total_f1
 
     @staticmethod
     def primitive_optimization_objective(args, image_set):
         Params.update_params(args)
-        total_precision, total_recall = run_primitive_test('../aaai', '../aaai/annotations_3.xml', image_set)
+        total_precision, total_recall = run_primitive_test('data/images', 'data/annotations.xml', image_set)
+        print(total_precision, total_recall)
         f1 = 2 * total_precision * total_recall / (total_precision + total_recall)
         return 1 - f1
 
@@ -101,8 +101,8 @@ class ParamOptimizer:
 
 optimizer = ParamOptimizer(ParamOptimizer.point_optimization_objective, 'data/annotations.xml', 'data/images')
 # optimizer.run_trial('optimization_results/point_detection_new/1.pickle', 'optimization_results/point_detection_new/2.pickle', optimizer.get_point_optimization_space(), 50)
-print(ParamOptimizer.point_optimization_objective({}, optimizer.training))
-
+# print(ParamOptimizer.point_optimization_objective(ParamOptimizer.get_best_params('optimization_results/point_detection_new/2.pickle', optimizer.get_point_optimization_space()), None))
+print(ParamOptimizer.primitive_optimization_objective({}, None))
 # with open('old_filtering.pickle', 'rb+') as f:
 #     old_scores = pickle.load(f)
 # with open('new_filtering.pickle', 'rb+') as f:

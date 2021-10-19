@@ -67,7 +67,7 @@ This tool assumes that all points in the diagram will be labelled with uppercase
 Due to the nature of the Chars64k dataset, the network often confuses the uppercase and lowercase forms of some letters. To combat this issue, first, the confusion matrix of the model on the validation data is computed.
 Next, when recognizing the letter in each text region, if the letter detected by the network is a lowercase letter that is frequently confused by the model with its uppercase form, the uppercase form of the letter is returned.
 Here, 'frequently confused' means that the entry for the lowercase letter-uppercase letter pair in the confusion matrix is above a certain threshold.
-
+The network has been trained to assume that each text region is around 12x12 in size. If the input image has high resolution, detection accuracy can be increased by using a network trained on larger images in place of the current network,
 ## Putting it all together
 
 To determine the locations of the points in the image, the intersection point or points for every line-line, line-circle, or circle-circle pair is determined.
@@ -86,6 +86,40 @@ else: score = offset - distance between centroid(corners) and text region
 
 offset is a parameter that controls the distance beyond which doing nothing is better than associating the text region with the point.
 
+Finally, the properties for each point are determined
+
+## Datasets
+
+This project contains the training data from the Seo et al paper annotated with lines, circles, points and point properties.
+Another dataset is provided containing significantly more complex diagrams, also annotated in the same format as the aaai dataset
+
+## Results
+
+### Speed
+
+One of the main advantages of this system is that it is significantly faster than geosolver at diagram parsing
+On the geosolver training dataset, this tool takes around 55 seconds to parse all diagrams, while the geosolver tool takes approximately 219 seconds
+Also, the geosolver tool is often extremely slow on diagrams that are very complex, especially when the diagram conatins a large number of lines or circles.
+While this tool is also significantly slower on complex diagrams, it is still much faster than the geosolver diagram parser
+
+### Primitive detection
+On the Seo et al. geosolver dataset, this tool achieves a primitive (line and circle) detection precision of 93.7% and recall of 93.33%, which is slightly better than the performance of geosolver on this dataset (without diagram text).
+On the more complex dataset this tool achieves a primitive detection precision of 85.5% and a recall of 85.1%
+
+### Property detection
+
+A new evaluation metric is used for this tool: property detection. To compute this metric, first, detected lines and circlees are mathced with ground truth lines and circles.
+Then, for named points (points with ground truth labels like A, B, etc.), a query based system is used to match points. First it is determined how many predicted points have the same label.
+If there is more than one point with the same label, the ground truth point is not matched with any predicted point. 
+Otherwise, it is determined if the single predicted point with the same label within a certain distance of the ground truth point. 
+If it does, it is matched with the ground truth point. 
+
+For unnamed points, for every ground truth unnamed point, it is simply determined if there is a predicted unnamed point within a certain distance of the ground truth point.
+If there is, that point is matched with the ground truth unnamed point. 
+
+Next, for every property of the ground truth point, it is determined whether the matched predicted point (if it exists) has that property.
+Since properties always reference lines or circles, for a property of a predicted point to match a ground truth property, 
+both the type of property has to match and the line or circle referenced by the predicted property has to be matched with the line or circle referenced in the ground truth property.
 
 
 

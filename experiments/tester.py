@@ -235,9 +235,10 @@ def run_primitive_test(image_directory, annotation_path, image_set=None):
     count = 0
     file_f1_scores = {}
     for file_name, interpretation, lines, circles in parse_annotations(annotation_path):
-        if interpretation.total_properties() > 0 and (image_set is None or file_name in image_set):
+        if interpretation.total_properties() > 0 and (image_set is None or file_name in image_set) and len(file_name)==8:
             diagram_image = cv2.imread(f'{image_directory}/{file_name}')
             predicted_interpretation, predicted_lines, predicted_circles = parse_diagram(diagram_image)
+            # display_interpretation(diagram_image, predicted_interpretation, predicted_lines.values(), predicted_circles.values())
             f1_info = primitive_f1_score(interpretation, lines, circles, predicted_interpretation, predicted_lines,
                                          predicted_circles, diagram_image.shape)
             total_relevant_properties += f1_info[0]

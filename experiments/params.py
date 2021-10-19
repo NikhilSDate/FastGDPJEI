@@ -18,7 +18,7 @@ class Params:
               "corner_detector_gaussian_blur_params": (5, 2),
               "corner_harris_params": (2, 3, 0.04),
               "corner_detector_is_corner_threshold": 0.04,
-              "diagram_graph_builder_dbscan_eps": 0.05,
+              "diagram_graph_builder_dbscan_eps": 0.075,
               "primitive_group_weight_offset_factor": 0.2,
               'resize_image_if_too_big': True,
               'resize_dim': 250,
