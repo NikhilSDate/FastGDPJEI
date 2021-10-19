@@ -435,7 +435,7 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
         else:
             label = f'p{diagram_interpretation.num_points()}'
             point.add_label(label)
-        if len(point.properties) != 0 :
+        if len(point.properties) != 0:
             diagram_interpretation.add_point(point)
     point_projections = get_point_projections(lines, diagram_interpretation)
     number_search_queue = Queue()
@@ -524,26 +524,24 @@ def display_interpretation(image, interpretation, lines, circles):
 # interpretation, lines, circles = parse_diagram(diagram)
 # display_interpretation(diagram, interpretation, lines.values(), circles.values())
 # cv2.destroyAllWindows()
-# import os
-# import time
-# count = 0
-# selecting = 0
-# totalstart = time.time()
-# for filename in os.listdir('../validation/images'):
-#         if filename.endswith('.png'):
-#             print(filename)
-#
-#             diagram = cv2.imread('../validation/images/'+filename)
-#
-#             interpretation, lines, circles = parse_diagram(diagram)
-#             cv2.waitKey()
-#             display_interpretation(diagram, interpretation, lines.values(), circles.values())
-#             cv2.destroyAllWindows()
-#             stop = time.time()
-#             print(time.time()-totalstart)
-#
-#             count+=1
-#             print(f'files done: {count}\r')
-# totalstop = time.time()
-# print(totalstop-totalstart)
-# print(selecting)
+import os
+import time
+count = 0
+selecting = 0
+totalstart = time.time()
+for filename in os.listdir('../experiments/data/images'):
+        if filename.endswith('.png') and len(filename)==8:
+
+            diagram = cv2.imread('../experiments/data/images/'+filename)
+
+            interpretation, lines, circles = parse_diagram(diagram)
+            # cv2.waitKey()
+            # display_interpretation(diagram, interpretation, lines.values(), circles.values())
+            # cv2.destroyAllWindows()
+            stop = time.time()
+            print(time.time()-totalstart)
+            count+=1
+            print(f'files done: {count}\r')
+totalstop = time.time()
+print(totalstop-totalstart)
+print(selecting)

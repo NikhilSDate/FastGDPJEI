@@ -6,8 +6,8 @@ class Params:
               "circle_detector_is_a_circle_threshold": 70,
               "circle_detector_clustering_epsilon": 0.1,
               "min_radius_factor": 0.2,
-              "line_detector_close_enough_angle_threshold": 0.1,
-              "line_detector_close_enough_rho_threshold": 0.075,
+              # "line_detector_close_enough_angle_threshold": 0.1,
+              # "line_detector_close_enough_rho_threshold": 0.075,
               "line_detector_clustering_eps": 0.025,
               "line_detector_canny_params": (50, 150, 3),
               "line_detector_hough_p_params": (1, np.pi / 180, 45, 10, 10),
@@ -18,19 +18,18 @@ class Params:
               "corner_detector_gaussian_blur_params": (5, 2),
               "corner_harris_params": (2, 3, 0.04),
               "corner_detector_is_corner_threshold": 0.04,
-              "diagram_graph_builder_dbscan_eps": 0.075,
+              "diagram_graph_builder_dbscan_eps": 0.07,
               "primitive_group_weight_offset_factor": 0.2,
               'resize_image_if_too_big': True,
               'resize_dim': 250,
               'diagram_parser_corner_lies_on_line_eps': 0.03,
               'circle_tangent_eps': 0.1,
-               # second argument is confusion threshold
+              # second argument is confusion threshold
               'character_detector_mode': 'smart',
-              'character_detector_confusion_threshold':50,
+              'character_detector_confusion_threshold': 50,
               # first elem is ksize, second argument is iterations
               'corner_response_map_ksize': 3,
-              'corner_response_map_iters':2
-
+              'corner_response_map_iters': 2
 
               }
 

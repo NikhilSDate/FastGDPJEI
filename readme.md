@@ -1,6 +1,6 @@
 # <TODO: NAME>
 
-This is a fast geometry diagram parsing tool. The main inprovements over minjoonseo's geosolver diagram parser are speed and the ability to detect text in the image and associate text labels with points. 
+This is a fast geometry diagram parsing tool. The main improvements over minjoonseo's geosolver diagram parser are speed and the ability to detect text in the image and associate text labels with points. 
 However, geosolver's diagram parser is often more accurate in detecting lines and circles. 
 Pan Lu's InterGPS can detect text more accurately than this system, but it uses the proprietary and paid MathPix API.
 This tool does not use any paid software or APIs
@@ -99,8 +99,9 @@ Another dataset is provided containing significantly more complex diagrams, also
 
 One of the main advantages of this system is that it is significantly faster than geosolver at diagram parsing
 On the geosolver training dataset, this tool takes around 55 seconds to parse all diagrams, while the geosolver tool takes approximately 219 seconds
-Also, the geosolver tool is often extremely slow on diagrams that are very complex, especially when the diagram conatins a large number of lines or circles.
+Also, the geosolver tool is often extremely slow on diagrams that are very complex, especially when the diagram contains many lines or circles.
 While this tool is also significantly slower on complex diagrams, it is still much faster than the geosolver diagram parser
+This tool takes around 183 seconds to parse all 40 complex diagrams. The geosolver diagram parser takes around 944 seconds to parse all 40 diagrams. 
 
 ### Primitive detection
 On the Seo et al. geosolver dataset, this tool achieves a primitive (line and circle) detection precision of 93.7% and recall of 93.33%, which is slightly better than the performance of geosolver on this dataset (without diagram text).
@@ -120,6 +121,13 @@ If there is, that point is matched with the ground truth unnamed point.
 Next, for every property of the ground truth point, it is determined whether the matched predicted point (if it exists) has that property.
 Since properties always reference lines or circles, for a property of a predicted point to match a ground truth property, 
 both the type of property has to match and the line or circle referenced by the predicted property has to be matched with the line or circle referenced in the ground truth property.
+Once this is determined, precision and recall is calculated as follows:
+precision = number of matched properties/number of predicted properties
+recall = number of matched properties/number of ground truth properties
+and f1 is calculated in the usual way.
+On the geosolver dataset, this tool achieves a precision of 72.4%, recall of 80.8%, and f1 or 76.3%
+On the more complex images, this tool achieves a precision of 60.0%, recall of 68.5% and f1 of 63.4%
+
 
 
 

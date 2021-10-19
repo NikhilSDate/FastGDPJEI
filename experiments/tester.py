@@ -204,7 +204,7 @@ def run_test(image_directory, annotation_path, image_set):
     file_scores = {}
     count = 0
     for file_name, interpretation, lines, circles in parse_annotations(annotation_path):
-        if interpretation.total_properties() > 0 and (image_set is None or file_name in image_set):
+        if interpretation.total_properties() > 0 and (image_set is None or file_name in image_set) and len(file_name)==8:
             diagram_image = cv2.imread(f'{image_directory}/{file_name}')
             predicted_interpretation, predicted_lines, predicted_circles = parse_diagram(diagram_image)
             # display_interpretation(diagram_image, predicted_interpretation, predicted_lines.values(), predicted_circles.values())
