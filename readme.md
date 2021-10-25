@@ -1,11 +1,39 @@
-# <TODO: NAME>
+# FastGDP
 
-This is a fast geometry diagram parsing tool. The main improvements over minjoonseo's geosolver diagram parser are speed and the ability to detect text in the image and associate text labels with points. 
-However, geosolver's diagram parser is often more accurate in detecting lines and circles. 
-Pan Lu's InterGPS can detect text more accurately than this system, but it uses the proprietary and paid MathPix API.
-This tool does not use any paid software or APIs
-
+## Introduction
+This is a fast geometry diagram parsing tool. Given a geometery diagram, this tool can recognize lines, circles, points and text labels of points.
+The tool also associates text labels with detected points and determined which lines or circle each point lies on and of a point is the center of a circle.
 This tool is also highly modular which makes it easy to make changes to the various components in order to improve them or customize them for a particular application.
+As an auxillary contribution, I also provide an accurate and effective approach for improving hough circle line and circle detection using clustering.
+## Related work
+
+### Geometry diagram parsing
+
+While diagram understanding is a much-explored top, the primary past research in the specific area of geometry diagram parsing is by Seo et al. (2014 and 2015), Lu et al.(2021), and Chen et al. (2021).
+Seo et al.'s geosolver's diagram parser overgenerates primitives (lines and circles) and then uses a submodular objective function to select the best primitives.
+geosolver can also detect points (referred to as core point by Seo et al.).
+Two major drawbacks of geosolver are that it does not automatically detect text regions, and that it is quite slow, especially on complex images containing many lines or circles.
+Lu et al.'s InterGPS uses the geosolver diagram parser before using ReinaNet to detect the positions of text and other diagram elements. InterGPS then uses the online paid service MathPix to recognize text.
+Finally, InterGPS cuses the detected primitives and text to generate diagram logic forms. Since InterGPS uses the results of the geosolver diagram parser to generate diagram logic forms, it is slower than geosolver. 
+Chen et al. use the initial three layers of RetinaNet 101 to extract diagram features. NeuralGPS uses predicting diagram elements as an auxiliary task but does not explicitly detect points or the relations between points, lines and circles.
+
+### Using clustering with the Hough Transform
+
+Using clustering to refine the predictions of the Hough Line Transform has been used by [Liu et al.](https://www.mdpi.com/1424-8220/19/24/5378/htm).
+This tool uses a very similar approach. One major difference is that FastGDP uses the probabilistic Hough Transform to detect lines, but converts every detected line back to the rho-theta form.
+This generally results in less false positives in practice. Also, while calculating the average rho and theta for each cluster, FastGDP computes a weighted average using the lengths of the detected lines as weights. <TODO>
+To my knowledge, the combine approach of parameter selection and clustering for circle detection using the Hough Transform has not been proposed before.
+
+
+## Comparison to past work
+
+Also, FastGDP is unable to detect symbols for perpendicular and parallel lines, equal line segments etc.
+The main advantage of FastGDP over the geosolver diagram parser is speed, and the ability to detect and recognize text and associate it with diagram points. 
+This makes the result of FastGDP more interpretable than those of NeuralGPS's diagram parser.
+While the primitives detected by FastGDP are usually very accurate due to the clustering-based method described below, compared to the geosolver diagram parser, the primitive detection accuracy of FastGDP is lower, especially on very complex diagrams.
+The text detection and recognition accuracy of FastGDP is lower than that of InterGPS. However, FastGDP does not use a proprietary paid text recognition service like MathPix. 
+
+## Clustering based hough 
 ## Quickstart
 First clone or download the repository
 
@@ -17,6 +45,9 @@ The parse_diagram method returns a tuple (interpretation, lines, circles). lines
 Interpretation is an instance of the Interpretation class. 
 
 Go down to the section on the Interpretation object to learn how to use the information it contains.
+
+Note that FastGDP does not give good results if the diagram image is either very small or very large. 
+The best results are obtained when the width and height of the image are between 150 and 350 pixels
 
 ## The Interpretation object
 Iterating over interpretation in a for loop will yield the points in the interpretation one at a time. 

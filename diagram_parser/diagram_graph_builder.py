@@ -529,19 +529,22 @@ import time
 count = 0
 selecting = 0
 totalstart = time.time()
-for filename in os.listdir('../experiments/data/images'):
-        if filename.endswith('.png') and len(filename)==8:
+for filename in os.listdir('X:\\Downloads\\data\\data\\GeoQA2.2\\image'):
+        if filename.endswith('.png'):
+            try:
+                diagram = cv2.imread('X:\\Downloads\\data\\data\\GeoQA2.2\\image\\'+filename)
+                # factor = 175/max(diagram.shape[0], diagram.shape[1])
+                # diagram = cv2.resize(diagram, (0, 0), fx=factor, fy=factor)
+                interpretation, lines, circles = parse_diagram(diagram)
+                display_interpretation(diagram, interpretation, lines.values(), circles.values())
+                cv2.destroyAllWindows()
+                stop = time.time()
+                print(time.time()-totalstart)
+                count+=1
+                print(f'files done: {count}\r')
+            except IndexError:
+                pass
 
-            diagram = cv2.imread('../experiments/data/images/'+filename)
-
-            interpretation, lines, circles = parse_diagram(diagram)
-            # cv2.waitKey()
-            # display_interpretation(diagram, interpretation, lines.values(), circles.values())
-            # cv2.destroyAllWindows()
-            stop = time.time()
-            print(time.time()-totalstart)
-            count+=1
-            print(f'files done: {count}\r')
 totalstop = time.time()
 print(totalstop-totalstart)
 print(selecting)
