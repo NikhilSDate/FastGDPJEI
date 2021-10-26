@@ -102,7 +102,7 @@ class ParamOptimizer:
 optimizer = ParamOptimizer(ParamOptimizer.point_optimization_objective, 'data/annotations.xml', 'data/images')
 # optimizer.run_trial('optimization_results/point_detection_new/1.pickle', 'optimization_results/point_detection_new/2.pickle', optimizer.get_point_optimization_space(), 50)
 # print(ParamOptimizer.point_optimization_objective(ParamOptimizer.get_best_params('optimization_results/point_detection_new/2.pickle', optimizer.get_point_optimization_space()), None))
-print(ParamOptimizer.point_optimization_objective({}, None))
+print(ParamOptimizer.primitive_optimization_objective({}, None))
 # with open('old_filtering.pickle', 'rb+') as f:
 #     old_scores = pickle.load(f)
 # with open('new_filtering.pickle', 'rb+') as f:

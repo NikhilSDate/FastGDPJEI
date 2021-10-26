@@ -1,11 +1,11 @@
 import numpy as np
 class Point:
     def __init__(self):
-        self.labels = list()
+        self.label = None
         self.properties = set()
         self.coords = None
-    def add_label(self, label=None):
-        self.labels.append(label)
+    def set_label(self, label):
+        self.label = label
     def set_coords(self, coords):
         self.coords = coords
     def add_property(self, property_name, property_data):
@@ -13,7 +13,7 @@ class Point:
     def has_property(self, property):
         return property in self.properties
     def __str__(self):
-        return f'Point(labels={self.labels}, properties={self.properties}, coords={self.coords})'
+        return f'Point(labels={self.label}, properties={self.properties}, coords={self.coords})'
     def __repr__(self):
         return self.__str__()
     def num_properties(self):

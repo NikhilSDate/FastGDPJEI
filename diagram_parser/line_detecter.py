@@ -66,7 +66,16 @@ def filter_lines(lines, image_size):
             filtered_lines.append(average_line)
 
     return filtered_lines
+
+def line_length(endpoints):
+    x1 = endpoints[0]
+    y1 = endpoints[1]
+    x2 = endpoints[2]
+    y2 = endpoints[3]
+    return sqrt((x2-x1)**2+(y2-y1)**2)
+
 def clustering_filter(lines, image_size):
+    line_lengths = [line_length(endpoints) for endpoints in lines]
     hesse_lines = [np.array(hesse_normal_form(endpoints)) for endpoints in lines]
     x = np.array([line[0] for line in hesse_lines])
     y = np.array([line[1] for line in hesse_lines])
@@ -83,9 +92,9 @@ def clustering_filter(lines, image_size):
     cluster_dict = {}
     for idx, label in enumerate(clustering.labels_):
         if label in cluster_dict:
-            cluster_dict[label].append(hesse_lines[idx])
+            cluster_dict[label].append((hesse_lines[idx], line_lengths[idx]))
         else:
-            cluster_dict[label] = [hesse_lines[idx]]
+            cluster_dict[label] = [(hesse_lines[idx], line_lengths[idx])]
     averaged_lines = []
     for _, lines in cluster_dict.items():
         averaged_lines.append(average_lines(lines))
@@ -198,19 +207,22 @@ def cylindrical_similarity(l1, l2):
     theta_diff = abs(l1[1] - l2[1])
     theta_diff = min(theta_diff, 1-theta_diff)
     return sqrt(rho_diff**2+theta_diff**2)
-def average_lines(lines):
+def average_lines(lines_with_weights):
+    lines = [line_with_weight[0] for line_with_weight in lines_with_weights]
+    weights = [line_with_weight[1] for line_with_weight in lines_with_weights]
+
     min_theta = np.min(lines, axis=0)[1]
     max_theta = np.max(lines, axis=0)[1]
     if max_theta-min_theta > np.pi/2:
         fixed_lines = []
-        for lines in lines:
-            if 2*pi-lines[1] < lines[1]:
-                fixed_lines.append([lines[0], lines[1]-2*pi])
+        for line in lines:
+            if 2*pi-line[1] < line[1]:
+                fixed_lines.append([line[0], line[1]-2*pi])
             else:
-                fixed_lines.append([lines[0], lines[1]])
-        return np.mean(fixed_lines, axis=0)
+                fixed_lines.append([line[0], line[1]])
+        return np.average(fixed_lines, axis=0)
     else:
-        return np.mean(lines, axis=0)
+        return np.average(lines, axis=0)
 
 
 def get_hough_lines(img):

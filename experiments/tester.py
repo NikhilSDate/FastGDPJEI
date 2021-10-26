@@ -55,12 +55,12 @@ def point_only_f1(ground_truth_interpretation, ground_truth_lines, ground_truth_
     point_match = dict()
     DISTANCE_THRESHOLD = 0.05 * (image_size[0] + image_size[1]) / 2
     for idx1, point1, in enumerate(ground_truth_interpretation):
-        label = point1.labels[0]
+        label = point1.label
         if len(label) == 1:
             count = 0
             matched_idx = None
             for idx2, point2 in enumerate(predicted_interpretation):
-                if labels_match(label, point2.labels[0]):
+                if labels_match(label, point2.label):
                     count += 1
                     if not matched_points[idx2] and distance(point1.coords,
                                                              point2.coords) < DISTANCE_THRESHOLD:
@@ -72,7 +72,7 @@ def point_only_f1(ground_truth_interpretation, ground_truth_lines, ground_truth_
             for idx2, point2 in enumerate(predicted_interpretation):
                 if not matched_points[idx2] and distance(point1.coords,
                                                          point2.coords) < DISTANCE_THRESHOLD \
-                        and labels_match(point1.labels[0], point2.labels[0]):
+                        and labels_match(point1.label, point2.label):
                     matched_points[idx2] = True
                     point_match[idx1] = idx2
     relevant_points = len(point_match)
@@ -93,12 +93,12 @@ def f1_score(ground_truth_interpretation, ground_truth_lines, ground_truth_circl
     point_match = dict()
     DISTANCE_THRESHOLD = 0.05 * (image_size[0] + image_size[1]) / 2
     for idx1, point1, in enumerate(ground_truth_interpretation):
-        label = point1.labels[0]
+        label = point1.label
         if len(label) == 1:
             count = 0
             matched_idx = None
             for idx2, point2 in enumerate(predicted_interpretation):
-                if labels_match(label, point2.labels[0]):
+                if labels_match(label, point2.label):
                     count += 1
                     if not matched_points[idx2] and distance(point1.coords,
                                                              point2.coords) < DISTANCE_THRESHOLD:
@@ -110,7 +110,7 @@ def f1_score(ground_truth_interpretation, ground_truth_lines, ground_truth_circl
             for idx2, point2 in enumerate(predicted_interpretation):
                 if not matched_points[idx2] and distance(point1.coords,
                                                          point2.coords) < DISTANCE_THRESHOLD \
-                        and labels_match(point1.labels[0], point2.labels[0]):
+                        and labels_match(point1.label, point2.label):
                     matched_points[idx2] = True
                     point_match[idx1] = idx2
 
@@ -164,7 +164,7 @@ def parse_annotations(annotation_path):
                     current_point.set_coords(coords)
                     for annotation_child in annotation:
                         if annotation_child.attrib['name'] == 'id':
-                            current_point.add_label(annotation_child.text)
+                            current_point.set_label(annotation_child.text)
                         elif annotation_child.attrib['name'] == 'liesOn':
                             if annotation_child.text is not None:
 
@@ -204,7 +204,7 @@ def run_test(image_directory, annotation_path, image_set):
     file_scores = {}
     count = 0
     for file_name, interpretation, lines, circles in parse_annotations(annotation_path):
-        if interpretation.total_properties() > 0 and (image_set is None or file_name in image_set) and len(file_name)==8:
+        if interpretation.total_properties() > 0 and (image_set is None or file_name in image_set) and len(file_name)==7:
             diagram_image = cv2.imread(f'{image_directory}/{file_name}')
             predicted_interpretation, predicted_lines, predicted_circles = parse_diagram(diagram_image)
             # display_interpretation(diagram_image, predicted_interpretation, predicted_lines.values(), predicted_circles.values())
@@ -218,6 +218,7 @@ def run_test(image_directory, annotation_path, image_set):
             file_scores[file_name] = f1_info
             count += 1
             print(f'files done {count}')
+            print(file_name)
 
     try:
         total_precision = total_relevant_properties / total_predicted_properties
@@ -235,7 +236,7 @@ def run_primitive_test(image_directory, annotation_path, image_set=None):
     count = 0
     file_f1_scores = {}
     for file_name, interpretation, lines, circles in parse_annotations(annotation_path):
-        if interpretation.total_properties() > 0 and (image_set is None or file_name in image_set) and len(file_name)==8:
+        if interpretation.total_properties() > 0 and (image_set is None or file_name in image_set) and len(file_name)==7:
             diagram_image = cv2.imread(f'{image_directory}/{file_name}')
             predicted_interpretation, predicted_lines, predicted_circles = parse_diagram(diagram_image)
             # display_interpretation(diagram_image, predicted_interpretation, predicted_lines.values(), predicted_circles.values())

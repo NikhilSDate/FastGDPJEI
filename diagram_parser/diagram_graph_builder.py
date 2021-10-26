@@ -431,10 +431,10 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
                     [character_predictor.predict_character(character_region, character_mode='letters') for
                      character_region in text_region]).upper()
 
-                point.add_label(text)
+                point.set_label(text)
         else:
             label = f'p{diagram_interpretation.num_points()}'
-            point.add_label(label)
+            point.set_label(label)
         if len(point.properties) != 0:
             diagram_interpretation.add_point(point)
     point_projections = get_point_projections(lines, diagram_interpretation)
@@ -470,10 +470,10 @@ def get_point_projections(lines, interpretation):
                 if property[1] not in points_on_line:
 
                     points_on_line[property[1]] = [
-                        (point.labels[0], point.coords)]
+                        (point.label[0], point.coords)]
                 else:
                     points_on_line[property[1]].append(
-                        (point.labels[0], point.coords))
+                        (point.label[0], point.coords))
     for line_index, points in points_on_line.items():
         sk_line = find_sk_line(lines[int(line_index[1])])
         projected_points = []
@@ -513,7 +513,7 @@ def display_interpretation(image, interpretation, lines, circles):
 
         cv2.circle(image, int_coords, 2, rgb.tolist(), -1)
 
-        cv2.putText(image, point.labels[0], int_coords, cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 0))
+        cv2.putText(image, point.label[0], int_coords, cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 0))
     line_img = draw_lines(image, lines)
     circle_img = draw_circles(image, circles)
     cv2.imshow('lines', line_img)
@@ -524,27 +524,27 @@ def display_interpretation(image, interpretation, lines, circles):
 # interpretation, lines, circles = parse_diagram(diagram)
 # display_interpretation(diagram, interpretation, lines.values(), circles.values())
 # cv2.destroyAllWindows()
-import os
-import time
-count = 0
-selecting = 0
-totalstart = time.time()
-for filename in os.listdir('X:\\Downloads\\data\\data\\GeoQA2.2\\image'):
-        if filename.endswith('.png'):
-            try:
-                diagram = cv2.imread('X:\\Downloads\\data\\data\\GeoQA2.2\\image\\'+filename)
-                # factor = 175/max(diagram.shape[0], diagram.shape[1])
-                # diagram = cv2.resize(diagram, (0, 0), fx=factor, fy=factor)
-                interpretation, lines, circles = parse_diagram(diagram)
-                display_interpretation(diagram, interpretation, lines.values(), circles.values())
-                cv2.destroyAllWindows()
-                stop = time.time()
-                print(time.time()-totalstart)
-                count+=1
-                print(f'files done: {count}\r')
-            except IndexError:
-                pass
-
-totalstop = time.time()
-print(totalstop-totalstart)
-print(selecting)
+# import os
+# import time
+# count = 0
+# selecting = 0
+# totalstart = time.time()
+# for filename in os.listdir('X:\\Downloads\\data\\data\\GeoQA2.2\\image'):
+#         if filename.endswith('.png'):
+#             try:
+#                 diagram = cv2.imread('X:\\Downloads\\data\\data\\GeoQA2.2\\image\\'+filename)
+#                 # factor = 175/max(diagram.shape[0], diagram.shape[1])
+#                 # diagram = cv2.resize(diagram, (0, 0), fx=factor, fy=factor)
+#                 interpretation, lines, circles = parse_diagram(diagram)
+#                 display_interpretation(diagram, interpretation, lines.values(), circles.values())
+#                 cv2.destroyAllWindows()
+#                 stop = time.time()
+#                 print(time.time()-totalstart)
+#                 count+=1
+#                 print(f'files done: {count}\r')
+#             except IndexError:
+#                 pass
+#
+# totalstop = time.time()
+# print(totalstop-totalstart)
+# print(selecting)

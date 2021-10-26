@@ -1,10 +1,11 @@
 # FastGDP
 
 ## Introduction
-This is a fast geometry diagram parsing tool. Given a geometery diagram, this tool can recognize lines, circles, points and text labels of points.
-The tool also associates text labels with detected points and determined which lines or circle each point lies on and of a point is the center of a circle.
-This tool is also highly modular which makes it easy to make changes to the various components in order to improve them or customize them for a particular application.
-As an auxillary contribution, I also provide an accurate and effective approach for improving hough circle line and circle detection using clustering.
+This is a fast geometry diagram parsing tool. Given a geometery diagram, FastGDP can recognize lines, circles, points and text labels of points.
+FastGDP also associates text labels with detected points and determined which lines or circle each point lies on and of a point is the center of a circle.
+FastGDP is also highly modular which makes it easy to make changes to the various components in order to improve them or customize them for a particular application.
+As an auxiliary contribution, I also provide an accurate and effective approach for improving hough circle detection using clustering.
+
 ## Related work
 
 ### Geometry diagram parsing
@@ -15,49 +16,60 @@ geosolver can also detect points (referred to as core point by Seo et al.).
 Two major drawbacks of geosolver are that it does not automatically detect text regions, and that it is quite slow, especially on complex images containing many lines or circles.
 Lu et al.'s InterGPS uses the geosolver diagram parser before using ReinaNet to detect the positions of text and other diagram elements. InterGPS then uses the online paid service MathPix to recognize text.
 Finally, InterGPS cuses the detected primitives and text to generate diagram logic forms. Since InterGPS uses the results of the geosolver diagram parser to generate diagram logic forms, it is slower than geosolver. 
-Chen et al. use the initial three layers of RetinaNet 101 to extract diagram features. NeuralGPS uses predicting diagram elements as an auxiliary task but does not explicitly detect points or the relations between points, lines and circles.
+Chen et al.'s NGS (Neural Geometry Solver) uses the initial three layers of RetinaNet 101 to extract diagram features. NGS uses predicting diagram elements as an auxiliary task but does not explicitly detect points or the relations between points, lines and circles.
+The diagram features along with text features are then used to solve the geometry problem.
 
 ### Using clustering with the Hough Transform
 
 Using clustering to refine the predictions of the Hough Line Transform has been used by [Liu et al.](https://www.mdpi.com/1424-8220/19/24/5378/htm).
-This tool uses a very similar approach. One major difference is that FastGDP uses the probabilistic Hough Transform to detect lines, but converts every detected line back to the rho-theta form.
+FastGDP uses a very similar approach. One major difference is that FastGDP uses the probabilistic Hough Transform to detect lines, but converts every detected line back to the rho-theta form.
 This generally results in less false positives in practice. Also, while calculating the average rho and theta for each cluster, FastGDP computes a weighted average using the lengths of the detected lines as weights. <TODO>
-To my knowledge, the combine approach of parameter selection and clustering for circle detection using the Hough Transform has not been proposed before.
+To my knowledge, the combined approach of using parameter selection and clustering with the Circle Hough Transform has not been proposed before.
 
 
-## Comparison to past work
-
-Also, FastGDP is unable to detect symbols for perpendicular and parallel lines, equal line segments etc.
-The main advantage of FastGDP over the geosolver diagram parser is speed, and the ability to detect and recognize text and associate it with diagram points. 
-This makes the result of FastGDP more interpretable than those of NeuralGPS's diagram parser.
+## Comparison with past work
+The main advantage of FastGDP over geosolver and is speed, and the ability to automatically detect and recognize text and associate it with diagram points. Regardless of the kind of diagram, FastGDP is usually 4-5 times faster than geosolver.
+Also, unlike InterGPS, FastGDP does not use a proprietary paid OCR API for recognizing text.
+Since FastGDP explicitly detects lines, circles, points, and the relations between them, the output of FastGDP is more interpretable than that of NeuralGPS.
+Similar to geosolver, FastGDP is unable to detect symbols for perpendicular and parallel lines, equal line segments etc. InterGPS can detect a wide variety of diagram symbols, including parallel, perpendicular, and equal lines.
 While the primitives detected by FastGDP are usually very accurate due to the clustering-based method described below, compared to the geosolver diagram parser, the primitive detection accuracy of FastGDP is lower, especially on very complex diagrams.
-The text detection and recognition accuracy of FastGDP is lower than that of InterGPS. However, FastGDP does not use a proprietary paid text recognition service like MathPix. 
+The text detection and recognition accuracy of FastGDP is lower than that of InterGPS. 
 
-## Clustering based hough 
 ## Quickstart
 First clone or download the repository
 
-Import the diagram_graph_builder.py file from the diagram_parser module
+Import the `diagram_graph_builder.py` file from the diagram_parser module
 
-Load your diagram image using opencv and call the parse_diagram method on it
+Load your diagram image using opencv (diagram image should have 3 channels) and call the parse_diagram method on it
 
 The parse_diagram method returns a tuple (interpretation, lines, circles). lines and circles are both dictionaries.
 Interpretation is an instance of the Interpretation class. 
 
-Go down to the section on the Interpretation object to learn how to use the information it contains.
+You can find more information on how to use the results of the `parse_diagram` method below
 
 Note that FastGDP does not give good results if the diagram image is either very small or very large. 
 The best results are obtained when the width and height of the image are between 150 and 350 pixels
 
-## The Interpretation object
-Iterating over interpretation in a for loop will yield the points in the interpretation one at a time. 
-The point object has attributes containing the label, coordintes of the point and a list of properties. 
-Currently, each property is a tuple where the first element is either lieson or centerof and the second element is a reference to either a line of circle. 
-If the second element refers to a line, it will be of the form l<x>. The lines dict will contain l<x> as a key. The corresponding value will be the line in the hesse normal form.
-If the second element of the property tuple is of the form c<x>, it refers to a circle. You can get the circle in the (x, y, radius) format from the circle dict by passing the circle id as the key.
-If the code thinks that the point has a label, the point's label will be a single uppercase letter. If the code thinks the point does not have 
+### How to use the results of `parse_diagram`
+parse_diagram returns a tuple `(interpretation, lines, circles)`.
 
-## A basic overview of how this tool works
+#### Interpretation
+An `Interpretation` object contains the instance variables `points`, `lines`, and `circles`. `points` is a list of instances of the `Point` class.
+`lines` and `circles` are both dictionaries. Each key in `lines` is the ID of a line (used to refer to that line in point properties) and the corresponding value is that line in Hesse normal form.
+Each key in `circles` is the ID of a circle and the corresponding value of the circle specfied in the (x, y, r) format where (x, y) are the coordinates of the center and r is the radius
+
+#### Point
+Iterating over interpretation in a for loop will yield the points in the interpretation one at a time. 
+The point object has instance variables `label`, which is the label of the point, `coords`, which are the coordinates of the point in the image, and `properties`, which is a list of the properties of the point.
+If a label is detected for a point, the label is a single uppercase letter. Otherwise, the label is of the form p<x> where x is an integer.
+
+#### Point properties
+
+Each point property is a tuple where the first element is either the string "lieson" or the string "centerof" and the second element is the ID of either a line of circle. 
+If the second element refers to a line, the ID is of the form l<x>, where x is an integer. The `lines` dictionary will contain l<x> as a key and the corresponding value will be the line in Hesse normal form.
+If the second element of the property tuple refers to a circle,  the ID is of the form c<x>, where c is an integer. The `circles` dictionary will contain x<x> as a key, and the corresponding value will be the circle in the (x, y, r) format.
+
+## An overview of how FastGDP works
 
 When you make a call to parse_diagram, first, the text regions in the diagram are detected using connected component analysis.
 Next, text is removed from the image and the primitives (lines and circles) are detected.
@@ -65,7 +77,7 @@ The circles are detected using the standard hough transform and the lines are de
 Clustering is now applied to both the lines and circles in order to remove duplicates and improve the detection accuracy.
 
 After the lines and circles are detected, intersection points between the lines and circles and corners are detected. The intersections are corners are then clustered. This provides information about the points in the diagram image.
-A convolutional neural network trained on the Chars64k dataset is then used to recognize the character in each text region. Next, the text regions are associated with the points. Finally, the properties for every point are determined.
+A convolutional neural network trained on the Chars74k dataset is then used to recognize the character in each text region. Next, the text regions are associated with the points. Finally, the properties for every point are determined.
 
 ## The line detector
 
@@ -94,7 +106,7 @@ This dilated response map is used to determine if a detected intersection point 
 
 To detect text regions in the image, the image is thresholded, and the connected components in the thresholded image are determined, Next, the connected components are filtered by size to filter out the main diagram component and salt and pepper noise.
 The text regions are then padded to make them square and are then fed into a convolutional neural network trained on the Chars64k dataset. The netword is trained to recognize lowercase letters, uppercase letters, and digits. 
-This tool assumes that all points in the diagram will be labelled with uppercase letters. 
+FastGDP assumes that all points in the diagram will be labelled with uppercase letters. 
 Due to the nature of the Chars64k dataset, the network often confuses the uppercase and lowercase forms of some letters. To combat this issue, first, the confusion matrix of the model on the validation data is computed.
 Next, when recognizing the letter in each text region, if the letter detected by the network is a lowercase letter that is frequently confused by the model with its uppercase form, the uppercase form of the letter is returned.
 Here, 'frequently confused' means that the entry for the lowercase letter-uppercase letter pair in the confusion matrix is above a certain threshold.
@@ -129,18 +141,18 @@ Another dataset is provided containing significantly more complex diagrams, also
 ### Speed
 
 One of the main advantages of this system is that it is significantly faster than geosolver at diagram parsing
-On the geosolver training dataset, this tool takes around 55 seconds to parse all diagrams, while the geosolver tool takes approximately 219 seconds
-Also, the geosolver tool is often extremely slow on diagrams that are very complex, especially when the diagram contains many lines or circles.
-While this tool is also significantly slower on complex diagrams, it is still much faster than the geosolver diagram parser
-This tool takes around 183 seconds to parse all 40 complex diagrams. The geosolver diagram parser takes around 944 seconds to parse all 40 diagrams. 
+On the geosolver training dataset, FastGDP takes ~55 seconds to parse all diagrams, while geosolver takes approximately 219 seconds
+Also, geosolver is often extremely slow on diagrams that are very complex, especially when the diagram contains many lines or circles.
+While FastGDP is also significantly slower on complex diagrams, it is still much faster than the geosolver diagram parser
+FastGDP takes ~183 seconds to parse all 40 complex diagrams. The geosolver diagram parser takes around 944 seconds to parse all 40 diagrams. 
 
 ### Primitive detection
-On the Seo et al. geosolver dataset, this tool achieves a primitive (line and circle) detection precision of 93.7% and recall of 93.33%, which is slightly better than the performance of geosolver on this dataset (without diagram text).
-On the more complex dataset this tool achieves a primitive detection precision of 85.5% and a recall of 85.1%
+On the Seo et al. geosolver dataset, FastGDP achieves a primitive (line and circle) detection precision of 93.7% and recall of 93.33%, which is slightly better than the performance of geosolver on this dataset (without diagram text).
+On the more complex dataset FastGDP achieves a primitive detection precision of 84.5% and a recall of 85.1%
 
 ### Property detection
 
-A new evaluation metric is used for this tool: property detection. To compute this metric, first, detected lines and circlees are mathced with ground truth lines and circles.
+A new evaluation metric is used for FastGDP: point property detection. To compute this metric, first, detected lines and circles are mathced with ground truth lines and circles.
 Then, for named points (points with ground truth labels like A, B, etc.), a query based system is used to match points. First it is determined how many predicted points have the same label.
 If there is more than one point with the same label, the ground truth point is not matched with any predicted point. 
 Otherwise, it is determined if the single predicted point with the same label within a certain distance of the ground truth point. 
@@ -156,8 +168,8 @@ Once this is determined, precision and recall is calculated as follows:
 precision = number of matched properties/number of predicted properties
 recall = number of matched properties/number of ground truth properties
 and f1 is calculated in the usual way.
-On the geosolver dataset, this tool achieves a precision of 72.4%, recall of 80.8%, and f1 or 76.3%
-On the more complex images, this tool achieves a precision of 60.0%, recall of 68.5% and f1 of 63.4%
+On the geosolver dataset, FastGDP achieves a precision of 72.4%, recall of 80.8%, and f1 or 76.3%
+On the more complex images, FastGDP achieves a precision of 59.9%, recall of 68.1% and f1 of 63.7%
 
 
 
