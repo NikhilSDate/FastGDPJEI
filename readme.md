@@ -65,7 +65,7 @@ If a label is detected for a point, the label is a single uppercase letter. Othe
 
 #### Point properties
 
-Each point property is a tuple where the first element is either the string "lieson" or the string "centerof" and the second element is the ID of either a line of circle. 
+Each point property is a tuple where the first element is either the string "lieson" or the string "centerof" and the second element is the ID of either a line or a circle. 
 If the second element refers to a line, the ID is of the form l<x>, where x is an integer. The `lines` dictionary will contain l<x> as a key and the corresponding value will be the line in Hesse normal form.
 If the second element of the property tuple refers to a circle,  the ID is of the form c<x>, where c is an integer. The `circles` dictionary will contain x<x> as a key, and the corresponding value will be the circle in the (x, y, r) format.
 
@@ -73,10 +73,11 @@ If the second element of the property tuple refers to a circle,  the ID is of th
 
 When you make a call to parse_diagram, first, the text regions in the diagram are detected using connected component analysis.
 Next, text is removed from the image and the primitives (lines and circles) are detected.
-The circles are detected using the standard hough transform and the lines are detected using the probabilistic hough transform. A smart parameter selection algorithm is used for detecting circles. 
+The circles are detected using the circle hough transform (CHT) and the lines are detected using the probabilistic hough transform. A parameter selection algorithm is used with the CHT. 
 Clustering is now applied to both the lines and circles in order to remove duplicates and improve the detection accuracy.
 
-After the lines and circles are detected, intersection points between the lines and circles and corners are detected. The intersections are corners are then clustered. This provides information about the points in the diagram image.
+After the lines and circles are detected, intersection points between the lines and circles and corners are detected. 
+The intersections and corners are then clustered. This provides information about the points in the diagram image.
 A convolutional neural network trained on the Chars74k dataset is then used to recognize the character in each text region. Next, the text regions are associated with the points. Finally, the properties for every point are determined.
 
 ## The line detector
