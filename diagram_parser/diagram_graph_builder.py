@@ -1,7 +1,7 @@
 from diagram_parser.line_detecter import get_filtered_lines, draw_lines, inclination
 from diagram_parser.corner_detector import get_corners, draw_corners
 from diagram_parser.text_detector import text_components_with_centroids, remove_text
-from diagram_parser.circle_detector import detect_circles, draw_circles
+from diagram_parser.circle_detector import detect_circles, draw_circles, remove_circles
 import cv2.cv2 as cv2
 import numpy as np
 from math import sin, cos, sqrt
@@ -17,6 +17,8 @@ from sklearn.cluster import DBSCAN
 import sympy as sp
 import skspatial.objects as skobj
 from experiments.params import Params
+import networkx as nx
+import matplotlib.pyplot as plt
 
 
 def is_pair_consistent(pairs, pair):
@@ -119,6 +121,8 @@ def calculate_intersection(structure1, structure2, corner_response_map):
         circle2_eq = sp.Eq((x - x1) ** 2 + (y - y1) ** 2, r1 ** 2)
 
         solutions = sp.solve([circle1_eq, circle2_eq], (x, y))
+        if len(solutions) == 0:
+            return None
         if type(solutions[0][0]) == sp.core.add.Add or type(solutions[0][0]) == sp.core.add.Add or type(
                 solutions[1][0]) == sp.core.add.Add or type(solutions[1][1]) == sp.core.add.Add:
             return None
@@ -136,7 +140,13 @@ def calculate_intersection(structure1, structure2, corner_response_map):
                 valid_sols.append(solution2)
         except IndexError:
             pass
+
         if len(valid_sols) == 2:
+            center_dist = sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2)
+            eps = Params.params['circle_tangent_eps']
+            if abs(center_dist - (r0 + r1)) / (r0 + r1) < eps:
+                np.mean([solution1, solution2], axis=0)
+
             return valid_sols
         elif len(valid_sols) == 1:
             return valid_sols[0]
@@ -177,13 +187,14 @@ def point_to_line_distance(point_coordinates, line):
     y = point_coordinates[1]
     distance = abs(A * x + B * y + C) / sqrt(A ** 2 + B ** 2)
     return distance
-def point_to_circle_distance(point_coords, circle):
 
+
+def point_to_circle_distance(point_coords, circle):
     center = [circle[0], circle[1]]
 
     r = circle[2]
 
-    distance = abs(r-(np.linalg.norm(np.subtract(point_coords, center))))
+    distance = abs(r - (np.linalg.norm(np.subtract(point_coords, center))))
     return distance
 
 
@@ -298,13 +309,12 @@ def get_weak_primitives(corners, intersections, centroids, strong_items):
 def get_primitives(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     filtered = remove_text(gray)
-
-    lines = get_filtered_lines(filtered)
     circles = detect_circles(filtered)
+    masked = remove_circles(filtered, circles)
+
+    lines = get_filtered_lines(masked)
     response_map, corners = get_corners(filtered)
     intersections = get_merged_intersections(lines, circles, image.shape, response_map)
-    image_with_corners = draw_corners(image, corners)
-    # cv2.imshow('corners', image_with_corners)
     text_regions = text_components_with_centroids(image)
     return corners, lines, circles, intersections, text_regions
 
@@ -353,41 +363,41 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
     for idx, label in enumerate(clustering.labels_):
         cluster_list[label].add(primitives[idx])
     # clean this up
-    upper = []
-    numbers = []
-    for idx, coords in enumerate(text_regions.keys()):
-
-        isupper, confidence = character_predictor.is_upper(text_regions[coords])
-        if isupper:
-            upper.append((Primitive(coords, 't', idx, character_type='upper'), confidence))
-        else:
-            numbers.append(Primitive(coords, 't', idx, character_type='upper'))
-        primitives.append(Primitive(coords, 't', idx, character_type='upper'))
-    sorted_upper = [item[0] for item in sorted(upper, key=lambda item:item[1], reverse=True)]
-    upper = sorted_upper
-    search_queue = Queue()
-    search_queue.put(SearchNode(primitives, lines, cluster_list))
-    best_child = SearchNode(primitives, lines, cluster_list)
-    offset_factor = Params.params['primitive_group_weight_offset_factor']
-
-    while search_queue and upper:
-        node = search_queue.get()
-        if node.level >= len(upper):
-            break
-        children = node.generate_children(upper[node.level])
-        sorted_children = sorted(children, key=lambda x: x.fitness(
-            weight_offset=offset_factor * (image_shape[0] + image_shape[1]) / 2))
-        best_child = sorted_children[-1]
-
-        if len(sorted_children) < 1:
-            for child in sorted_children:
-                search_queue.put(child)
-        else:
-            for child in sorted_children[-1:]:
-                search_queue.put(child)
+    # upper = []
+    # numbers = []
+    # for idx, coords in enumerate(text_regions.keys()):
+    #
+    #     isupper, confidence = character_predictor.is_upper(text_regions[coords])
+    #     if isupper:
+    #         upper.append((Primitive(coords, 't', idx, character_type='upper'), confidence))
+    #     else:
+    #         numbers.append(Primitive(coords, 't', idx, character_type='upper'))
+    #     primitives.append(Primitive(coords, 't', idx, character_type='upper'))
+    # sorted_upper = [item[0] for item in sorted(upper, key=lambda item: item[1], reverse=True)]
+    # upper = sorted_upper
+    # search_queue = Queue()
+    # search_queue.put(SearchNode(primitives, lines, cluster_list))
+    # best_child = SearchNode(primitives, lines, cluster_list)
+    # offset_factor = Params.params['primitive_group_weight_offset_factor']
+    #
+    # while search_queue and upper:
+    #     node = search_queue.get()
+    #     if node.level >= len(upper):
+    #         break
+    #     children = node.generate_children(upper[node.level])
+    #     sorted_children = sorted(children, key=lambda x: x.fitness(
+    #         weight_offset=offset_factor * (image_shape[0] + image_shape[1]) / 2))
+    #     best_child = sorted_children[-1]
+    #
+    #     if len(sorted_children) < 1:
+    #         for child in sorted_children:
+    #             search_queue.put(child)
+    #     else:
+    #         for child in sorted_children[-1:]:
+    #             search_queue.put(child)
 
     diagram_interpretation = Interpretation()
-
+    best_child = SearchNode(primitives, lines, cluster_list)
     # for cluster in best_child.points:
     #     if cluster.contains('t'):
 
@@ -417,12 +427,12 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
                     line_set.add(index)
             for line in line_set:
                 point.add_property('lieson', f'l{line}')
-            circle_set = set()
-            for index, circle in enumerate(circles):
-                if point_to_circle_distance(corner_centroid, circle) < eps * (image_shape[0] + image_shape[1]) / 2:
-                    circle_set.add(index)
-            for index in circle_set:
-                point.add_property('lieson', f'c{index}')
+            # circle_set = set()
+            # for index, circle in enumerate(circles):
+            #     if point_to_circle_distance(corner_centroid, circle) < eps * (image_shape[0] + image_shape[1]) / 2:
+            #         circle_set.add(index)
+            # for index in circle_set:
+            #     point.add_property('lieson', f'c{index}')
 
         if cluster.contains('t'):
             for text_primitive in cluster.primitives['t']:
@@ -435,31 +445,42 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
         else:
             label = f'p{diagram_interpretation.num_points()}'
             point.set_label(label)
-        if len(point.properties) != 0:
+        if len(point.properties) != 0 and (len(circles) == 0 or cluster.contains('i') or cluster.contains('t')):
             diagram_interpretation.add_point(point)
-    point_projections = get_point_projections(lines, diagram_interpretation)
-    number_search_queue = Queue()
-    best_child.reset_level()
-    best_child.set_point_projections(point_projections)
-    number_search_queue.put(best_child)
-    best_child_with_numbers = best_child
-    while number_search_queue:
-        node = number_search_queue.get()
-        if node.level >= len(numbers):
-            break
-        children = node.generate_children(numbers[node.level])
-        sorted_children = sorted(children, key=lambda x: x.fitness())
-        best_child_with_numbers = sorted_children[-1]
-
-        if len(sorted_children) < 1:
-            for child in sorted_children:
-                number_search_queue.put(child)
-        else:
-            for child in sorted_children[-1:]:
-                number_search_queue.put(child)
-    diagram_interpretation.set_info_labels(best_child_with_numbers.info_labels)
-    diagram_interpretation.set_lines(lines)
+    # point_projections = get_point_projections(lines, diagram_interpretation)
+    # number_search_queue = Queue()
+    # best_child.reset_level()
+    # best_child.set_point_projections(point_projections)
+    # number_search_queue.put(best_child)
+    # best_child_with_numbers = best_child
+    # while number_search_queue:
+    #     node = number_search_queue.get()
+    #     if node.level >= len(numbers):
+    #         break
+    #     children = node.generate_children(numbers[node.level])
+    #     sorted_children = sorted(children, key=lambda x: x.fitness())
+    #     best_child_with_numbers = sorted_children[-1]
+    #
+    #     if len(sorted_children) < 1:
+    #         for child in sorted_children:
+    #             number_search_queue.put(child)
+    #     else:
+    #         for child in sorted_children[-1:]:
+    #             number_search_queue.put(child)
+    # diagram_interpretation.set_info_labels(best_child_with_numbers.info_labels)
+    # diagram_interpretation.set_lines(lines)
     return diagram_interpretation
+
+
+def build_graph_from_interpretation(interpretation):
+    graph = nx.Graph()
+    for point in interpretation:
+        graph.add_node(point.label)
+    for (point1, point2) in itertools.combinations(interpretation.points, 2):
+        if len(point1.properties.intersection(point2.properties)):
+            graph.add_edge(point1.label, point2.label)
+
+    return graph
 
 
 def get_point_projections(lines, interpretation):
@@ -513,38 +534,41 @@ def display_interpretation(image, interpretation, lines, circles):
 
         cv2.circle(image, int_coords, 2, rgb.tolist(), -1)
 
-        cv2.putText(image, point.label[0], int_coords, cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 0))
+        cv2.putText(image, point.label, int_coords, cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 0))
     line_img = draw_lines(image, lines)
     circle_img = draw_circles(image, circles)
     cv2.imshow('lines', line_img)
     cv2.imshow('circles', circle_img)
     cv2.imshow('interpretation', image)
     cv2.waitKey()
-# diagram = cv2.imread('../experiments/data/images/0001.png')
+
+# diagram = cv2.imread('../experiments/data/practice/052.png')
 # interpretation, lines, circles = parse_diagram(diagram)
+# print(interpretation)
 # display_interpretation(diagram, interpretation, lines.values(), circles.values())
 # cv2.destroyAllWindows()
 # import os
 # import time
+#
 # count = 0
 # selecting = 0
 # totalstart = time.time()
-# for filename in os.listdir('X:\\Downloads\\data\\data\\GeoQA2.2\\image'):
-#         if filename.endswith('.png'):
-#             try:
-#                 diagram = cv2.imread('X:\\Downloads\\data\\data\\GeoQA2.2\\image\\'+filename)
-#                 # factor = 175/max(diagram.shape[0], diagram.shape[1])
-#                 # diagram = cv2.resize(diagram, (0, 0), fx=factor, fy=factor)
-#                 interpretation, lines, circles = parse_diagram(diagram)
-#                 display_interpretation(diagram, interpretation, lines.values(), circles.values())
-#                 cv2.destroyAllWindows()
-#                 stop = time.time()
-#                 print(time.time()-totalstart)
-#                 count+=1
-#                 print(f'files done: {count}\r')
-#             except IndexError:
-#                 pass
+# for filename in os.listdir('../experiments/data/practice'):
+#     if filename.endswith('.png'):
+#         try:
+#             diagram = cv2.imread('../experiments/data/practice/' + filename)
+#
+#             get_primitives(diagram)
+#
+#             stop = time.time()
+#             print(time.time() - totalstart)
+#             count += 1
+#             print(f'files done: {count}\r')
+#         except IndexError:
+#             pass
+#         except ValueError:
+#             pass
 #
 # totalstop = time.time()
-# print(totalstop-totalstart)
+# print(totalstop - totalstart)
 # print(selecting)

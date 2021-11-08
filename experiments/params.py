@@ -2,7 +2,7 @@ import numpy as np
 
 
 class Params:
-    params = {"hough_circles_param_1": 50, "hough_circles_param_2_range": (1, 100),
+    params = {"hough_circles_param_1": 50, "hough_circles_param_2_range": (50, 150),
               "circle_detector_is_a_circle_threshold": 70,
               "circle_detector_clustering_epsilon": 0.1,
               "min_radius_factor": 0.2,
@@ -21,7 +21,7 @@ class Params:
               "diagram_graph_builder_dbscan_eps": 0.07,
               "primitive_group_weight_offset_factor": 0.2,
               'resize_image_if_too_big': True,
-              'resize_dim': 250,
+              'resize_dim': 300,
               'diagram_parser_corner_lies_on_line_eps': 0.03,
               'circle_tangent_eps': 0.1,
               # second argument is confusion threshold

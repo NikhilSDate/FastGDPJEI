@@ -67,12 +67,14 @@ def filter_lines(lines, image_size):
 
     return filtered_lines
 
+
 def line_length(endpoints):
     x1 = endpoints[0]
     y1 = endpoints[1]
     x2 = endpoints[2]
     y2 = endpoints[3]
-    return sqrt((x2-x1)**2+(y2-y1)**2)
+    return sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
 
 def clustering_filter(lines, image_size):
     line_lengths = [line_length(endpoints) for endpoints in lines]
@@ -168,6 +170,8 @@ def close_enough(line1, line2, image_size):
     if angle_difference < angle_thresh and rho_difference < rho_thresh * (image_size[0] + image_size[1]) / 2:
         return True
     return False
+
+
 def match_close_enough(line1, line2, image_size):
     rho1, theta1 = convert_to_positive(line1)
     rho2, theta2 = convert_to_positive(line2)
@@ -186,38 +190,46 @@ def match_close_enough(line1, line2, image_size):
     if angle_difference < 0.1 and rho_difference < 0.05 * (image_size[0] + image_size[1]) / 2:
         return True
     return False
+
+
 def close_enough_p(line1, line2, image_size):
     hesse_line1 = hesse_normal_form(line1)
     hesse_line2 = hesse_normal_form(line2)
     return close_enough(hesse_line1, hesse_line2, image_size)
+
+
 def hesse_normal_form(line):
     x1, y1, x2, y2 = line
     A = y1 - y2
     B = x2 - x1
-    C = (x1-x2)*y1 + (y2-y1)*x1
-    cosine = A/sqrt(A**2+B**2)
-    sine = B/sqrt(A**2+B**2)
-    negative_rho = C/sqrt(A**2+B**2)
+    C = (x1 - x2) * y1 + (y2 - y1) * x1
+    cosine = A / sqrt(A ** 2 + B ** 2)
+    sine = B / sqrt(A ** 2 + B ** 2)
+    negative_rho = C / sqrt(A ** 2 + B ** 2)
     rho = -negative_rho
     theta = arctan2(sine, cosine)
 
     return convert_to_positive([rho, theta])
+
+
 def cylindrical_similarity(l1, l2):
-    rho_diff = abs(l1[0]-l2[0])
+    rho_diff = abs(l1[0] - l2[0])
     theta_diff = abs(l1[1] - l2[1])
-    theta_diff = min(theta_diff, 1-theta_diff)
-    return sqrt(rho_diff**2+theta_diff**2)
+    theta_diff = min(theta_diff, 1 - theta_diff)
+    return sqrt(rho_diff ** 2 + theta_diff ** 2)
+
+
 def average_lines(lines_with_weights):
     lines = [line_with_weight[0] for line_with_weight in lines_with_weights]
     weights = [line_with_weight[1] for line_with_weight in lines_with_weights]
 
     min_theta = np.min(lines, axis=0)[1]
     max_theta = np.max(lines, axis=0)[1]
-    if max_theta-min_theta > np.pi/2:
+    if max_theta - min_theta > np.pi / 2:
         fixed_lines = []
         for line in lines:
-            if 2*pi-line[1] < line[1]:
-                fixed_lines.append([line[0], line[1]-2*pi])
+            if 2 * pi - line[1] < line[1]:
+                fixed_lines.append([line[0], line[1] - 2 * pi])
             else:
                 fixed_lines.append([line[0], line[1]])
         return np.average(fixed_lines, axis=0)
@@ -232,12 +244,15 @@ def get_hough_lines(img):
     edges = cv2.Canny(img, canny_params[0], canny_params[1], apertureSize=canny_params[2])
     lines = cv2.HoughLines(edges, 1, np.pi / 45, 40)
     return lines
+
+
 def get_hough_lines_p(img):
     edges = cv2.Canny(img, 50, 150, apertureSize=3)
     # PARAM line_detector_hough_p_params
     rho, theta, thresh, minLineLength, maxLineGap = Params.params['line_detector_hough_p_params']
 
-    lines = cv2.HoughLinesP(edges, rho=rho, theta=theta, threshold=thresh, minLineLength=minLineLength, maxLineGap=maxLineGap)
+    lines = cv2.HoughLinesP(edges, rho=rho, theta=theta, threshold=thresh, minLineLength=minLineLength,
+                            maxLineGap=maxLineGap)
     if lines is not None:
         lines = [line[0] for line in lines]
     else:
@@ -266,6 +281,18 @@ def draw_lines(img, lines):
     # plt.show()
 
 
+def draw_lines_with_endpoints(img, lines):
+    img_copy = img.copy()
+    for line in lines:
+        x1 = line[0]
+        y1 = line[1]
+        x2 = line[2]
+        y2 = line[3]
+
+        cv2.line(img_copy, (x1, y1), (x2, y2), (0, 0, 255), 2)
+    return img_copy
+
+
 def get_filtered_lines(img, filter_method='cluster'):
     mode = Params.params['line_detector_mode']
     if mode == 'hough':
@@ -282,33 +309,27 @@ def get_filtered_lines(img, filter_method='cluster'):
         resize_dim = Params.params['resize_dim']
         max_dimension = max(img.shape[0], img.shape[1])
         if max_dimension > resize_dim and resize_image:
-            factor = resize_dim/max_dimension
-            img = cv2.resize(img, (0, 0), fx=factor, fy=factor)
+            factor = resize_dim / max_dimension
+            image = cv2.resize(img, (0, 0), fx=factor, fy=factor)
         else:
             factor = 1
-        hough_lines_p = get_hough_lines_p(img)
+            image = img.copy()
+        hough_lines_p = get_hough_lines_p(image)
         hough_lines_p = np.multiply(hough_lines_p, 1 / factor)
         if hough_lines_p is None or len(hough_lines_p) == 0:
             return np.array([])
         else:
             if filter_method == 'cluster':
-                filtered_lines = clustering_filter(hough_lines_p, np.array(np.array(img.shape)*1/factor))
+                filtered_lines = clustering_filter(hough_lines_p, np.array(np.array(image.shape) * 1 / factor))
                 # cv2.imshow('lines', draw_lines(cv2.resize(img, (0, 0), fx=1/factor, fy=1/factor), filtered_lines))
                 # cv2.waitKey()
                 return filtered_lines
             else:
-                filtered_lines = filter_lines_p(hough_lines_p, np.array(np.array(img.shape)*1/factor))
+                filtered_lines = filter_lines_p(hough_lines_p, np.array(np.array(image.shape) * 1 / factor))
                 hesse_lines = [np.array(hesse_normal_form(endpoints_line)) for endpoints_line in filtered_lines]
                 return hesse_lines
 
-# diagram = cv2.imread('../experiments/data/images/0032.png')
-# gray = cv2.cvtColor(diagram, cv2.COLOR_BGR2GRAY)
-# gray = remove_text(gray)
-# new_lines = get_filtered_lines(gray, 'cluster')
-# old_lines = get_filtered_lines(gray, 'all')
-# cv2.imshow('new lines', draw_lines(diagram, new_lines))
-# cv2.imshow('old lines', draw_lines(diagram.copy(), old_lines))
-# cv2.waitKey()
+
 # import os
 # import time
 # count = 0

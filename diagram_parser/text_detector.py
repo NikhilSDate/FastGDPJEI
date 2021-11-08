@@ -23,7 +23,10 @@ def connected_components_and_threshold(image):
     stats = components[2]
     stats_with_small_areas = stats[1:]
     areas = [stat[2]*stat[3] for stat in stats_with_small_areas]
-    area_threshold = otsus_threshold(areas)
+    if len(areas) < 2:
+        return components, -1, threshold
+    area_threshold = sorted(areas)[-2]
+
     return components, area_threshold, threshold
 
 
@@ -59,7 +62,7 @@ def white_out_components_with_threshold(image, components, threshold):
     rejected_labels = []
     mask = np.zeros_like(image)
     for idx, stat in enumerate(stats):
-        if stat[4] < min(threshold, 500):
+        if stat[2]*stat[3] <= threshold:
             rejected_labels.append(idx)
     for idx, label in np.ndenumerate(labels):
         if label in rejected_labels:

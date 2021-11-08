@@ -15,9 +15,10 @@ def distance(x1, y1, x2, y2):
 
 
 def get_corners(image):
-#    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    #    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gray = image
-#    masked = remove_text(gray)
+
+    #    masked = remove_text(gray)
     masked = image
     # PARAM corner_detector_gaussian_blur_ksize
     # PARAM corner_detector_gaussian_blur_sigma
@@ -59,7 +60,6 @@ def draw_corners(image, points):
         int_point = map(lambda f: int(f), point)  # convert coordinates to ints
         cv2.circle(image_copy, tuple(int_point), 2, [0, 255, 0], thickness=-1)
     return image_copy
-
 
 # img = cv2.imread('../experiments/data/images/0030.png')
 # corners = get_corners(img)

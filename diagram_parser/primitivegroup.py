@@ -76,7 +76,8 @@ class PrimitiveGroup:
         elif self.contains('c'):
             c_centroid = self.centroid('c')
             for text_coord in self.coord_list('t', labels_only=True):
-                weight += np.linalg.norm(text_coord - c_centroid)
+                weight += 1*np.linalg.norm(text_coord - c_centroid)
+
         weight = weight / len(self.coord_list('t'))
         return offset-weight
     def __str__(self):

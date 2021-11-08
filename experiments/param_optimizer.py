@@ -74,7 +74,7 @@ class ParamOptimizer:
     @staticmethod
     def point_optimization_objective(args, image_set):
         Params.update_params(args)
-        file_scores, total_precision, total_recall = run_test('data/images', 'data/annotations.xml', image_set)
+        file_scores, total_precision, total_recall = run_test('data/practice', 'data/practice/annotations.xml', image_set)
         total_f1 = 2*total_precision*total_recall/(total_precision+total_recall)
         print(total_precision, total_recall)
         return -total_f1
@@ -82,7 +82,7 @@ class ParamOptimizer:
     @staticmethod
     def primitive_optimization_objective(args, image_set):
         Params.update_params(args)
-        total_precision, total_recall = run_primitive_test('data/images', 'data/annotations.xml', image_set)
+        total_precision, total_recall = run_primitive_test('data/practice', 'data/practice/annotations.xml', image_set)
         print(total_precision, total_recall)
         f1 = 2 * total_precision * total_recall / (total_precision + total_recall)
         return 1 - f1

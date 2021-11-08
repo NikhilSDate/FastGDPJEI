@@ -36,27 +36,42 @@ def get_best_params(image, objective_function):
     circle_counts = []
     max_circles = 0
     param_2_range = Params.params["hough_circles_param_2_range"]
+    min_radius = Params.params['min_radius_factor'] * int((image.shape[0] + image.shape[1]) / 4)
+    min_radius = int(min_radius)
+    low = param_2_range[0]
+    high = param_2_range[1]
+    best_param2 = 0
+    while low <= high:
+        mid = int((low + high) / 2)
+        trial_circles = run_hough_trial(image, mid, min_radius)
+        if trial_circles is not None and not np.array_equal(trial_circles, [[50], [0], [0], [0]]):
+            best_param2 = mid
+            low = mid+1
+        else:
+            high = mid-1
+    return best_param2, min_radius
+
     for param2 in range(param_2_range[0], param_2_range[1], 2):
-            min_radius = Params.params['min_radius_factor']*int((image.shape[0] + image.shape[1]) / 4)
-            min_radius = int(min_radius)
-#        for min_radius in range(0, int((image.shape[0] + image.shape[1]) / 4), 3):
-            trial_circles = run_hough_trial(image, param2, min_radius)
+        min_radius = Params.params['min_radius_factor'] * int((image.shape[0] + image.shape[1]) / 4)
+        min_radius = int(min_radius)
+        #        for min_radius in range(0, int((image.shape[0] + image.shape[1]) / 4), 3):
+        trial_circles = run_hough_trial(image, param2, min_radius)
 
-            if trial_circles is not None and not np.array_equal(trial_circles, [[50], [0], [0], [0]]):
-                num_circles = trial_circles.shape[1]
-                trial_results.append((param2, min_radius, num_circles))
-                circle_counts.append(num_circles)
-                x.append(param2)
-                y.append(min_radius)
+        if trial_circles is not None and not np.array_equal(trial_circles, [[50], [0], [0], [0]]):
+            num_circles = trial_circles.shape[1]
+            trial_results.append((param2, min_radius, num_circles))
+            circle_counts.append(num_circles)
+            x.append(param2)
+            y.append(min_radius)
 
-                if num_circles > max_circles:
-                    max_circles = num_circles
+            if num_circles > max_circles:
+                max_circles = num_circles
 
 
-            else:
-                x.append(param2)
-                y.append(min_radius)
-                circle_counts.append(0)
+        else:
+            x.append(param2)
+            y.append(min_radius)
+            circle_counts.append(0)
     # PARAM: hough_circles_max_param_2
     comparator = lambda trial: objective_function(*trial, param_2_range[1], int((image.shape[0] + image.shape[1]) / 4),
                                                   max_circles)
@@ -139,7 +154,6 @@ def detect_circles(image):
     # PARAM: hough_circles_is_a_circle_threshold
     is_a_circle = Params.params['circle_detector_is_a_circle_threshold']
     if best_params[0] > is_a_circle:
-
         best_circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT,
                                         1.5, 1, param1=50, param2=best_params[0],
                                         minRadius=best_params[1], maxRadius=int((image.shape[0] + image.shape[1]) / 4))
@@ -157,13 +171,7 @@ def detect_circles(image):
         return np.array([])
 
 
-# img = cv2.imread('../aaai/025.png')
-# gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-# circles = detect_circles(gray)
-# if circles is not None:
-#     draw_circles(img, circles.astype(np.uint16))
-# cv2.imshow('circles', img)
-# cv2.waitKey()
+
 
 
 # ax = fig.gca(projection='3d')
@@ -197,7 +205,15 @@ def filter_circles(circles):
             strong_circles.append(circle)
     return np.array([strong_circles])
 
+def remove_circles(image, circles):
+    # print(image.shape)
+    mask = np.zeros_like(image)
+    for circle in circles:
+        cv2.circle(mask, (int(circle[0]), int(circle[1])), int(circle[2]), (255, 255, 255), int(0.02*(image.shape[0]+image.shape[1])))
 
+    masked_image = cv2.bitwise_or(image, mask)
+
+    return masked_image
 def circles_close_enough(circle1, circle2):
     total_radius = circle1[2] + circle2[2]
     circle1_coords = np.array([circle1[0], circle1[1]])
@@ -232,3 +248,12 @@ def circles_IOU_close_enough(circle1, circle2, thresh=0.8):
     else:
         IOU = 0
     return IOU > thresh
+
+# img = cv2.imread('../experiments/data/images/0002.png')
+# gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+# circles = detect_circles(gray)
+# remove_circles(gray, circles)
+# if circles is not None:
+#     img = draw_circles(img, circles.astype(np.uint16))
+# cv2.imshow('circles', img)
+# cv2.waitKey()

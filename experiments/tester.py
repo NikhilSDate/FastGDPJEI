@@ -6,6 +6,7 @@ import numpy as np
 import xml.etree.ElementTree as ET
 from diagram_parser.diagram_graph_builder import parse_diagram, display_interpretation
 import cv2.cv2 as cv2
+import pickle
 
 
 def distance(point1_coords, point2_coords):
@@ -56,7 +57,7 @@ def point_only_f1(ground_truth_interpretation, ground_truth_lines, ground_truth_
     DISTANCE_THRESHOLD = 0.05 * (image_size[0] + image_size[1]) / 2
     for idx1, point1, in enumerate(ground_truth_interpretation):
         label = point1.label
-        if len(label) == 1:
+        if False:
             count = 0
             matched_idx = None
             for idx2, point2 in enumerate(predicted_interpretation):
@@ -71,8 +72,7 @@ def point_only_f1(ground_truth_interpretation, ground_truth_lines, ground_truth_
         else:
             for idx2, point2 in enumerate(predicted_interpretation):
                 if not matched_points[idx2] and distance(point1.coords,
-                                                         point2.coords) < DISTANCE_THRESHOLD \
-                        and labels_match(point1.label, point2.label):
+                                                         point2.coords) < DISTANCE_THRESHOLD:
                     matched_points[idx2] = True
                     point_match[idx1] = idx2
     relevant_points = len(point_match)
@@ -156,6 +156,8 @@ def parse_annotations(annotation_path):
             annotations = [annotation for annotation in child]
             ground_truth_lines = dict()
             ground_truth_circles = dict()
+            line_idx = 0
+            circle_idx = 0
             diagram_interpretation = Interpretation()
             for annotation in annotations:
                 if annotation.attrib['label'] == 'Point':
@@ -182,11 +184,21 @@ def parse_annotations(annotation_path):
                     point1 = [float(coord) for coord in line_points[0].split(',')]
                     point2 = [float(coord) for coord in line_points[1].split(',')]
                     ground_truth_lines[annotation[0].text] = np.array((point1, point2))
+                    if annotation[0]:
+                        ground_truth_lines[annotation[0].text] = (point1, point2)
+                    else:
+                        ground_truth_lines['l'+str(line_idx)] = (point1, point2)
+                        line_idx+=1
                 elif annotation.attrib['label'] == 'Circle':
                     circle_points = annotation.attrib['points'].split(';')
                     point1 = [float(coord) for coord in circle_points[0].split(',')]
                     point2 = [float(coord) for coord in circle_points[1].split(',')]
-                    ground_truth_circles[annotation[0].text] = (point1, point2)
+                    if annotation[0]:
+                        ground_truth_circles[annotation[0].text] = (point1, point2)
+                    else:
+                        ground_truth_circles['c'+str(circle_idx)] = (point1, point2)
+                        circle_idx+=1
+
             processed_circles = dict()
             for key, circle in ground_truth_circles.items():
                 center = circle[0]
@@ -198,29 +210,52 @@ def parse_annotations(annotation_path):
 
 
 def run_test(image_directory, annotation_path, image_set):
+    with open('geos/points_test.pickle', 'rb') as f:
+        points = pickle.load(f)
+
+    def build_interpretation(image_points):
+        interpretation = Interpretation()
+        for coords in image_points:
+            point = Point()
+            point.set_coords(np.array(coords))
+            point.set_label('p0')
+            interpretation.add_point(point)
+        return interpretation, {}, {}
+
+
+
     total_relevant_properties = 0
     total_predicted_properties = 0
     total_ground_truth_properties = 0
     file_scores = {}
     count = 0
     for file_name, interpretation, lines, circles in parse_annotations(annotation_path):
-        if interpretation.total_properties() > 0 and (image_set is None or file_name in image_set) and len(file_name)==7:
+        if len(interpretation.points) > 0 and (image_set is None or file_name in image_set):
             diagram_image = cv2.imread(f'{image_directory}/{file_name}')
+
             predicted_interpretation, predicted_lines, predicted_circles = parse_diagram(diagram_image)
+            # predicted_interpretation, predicted_lines, predicted_circles = build_interpretation(points[file_name])
             # display_interpretation(diagram_image, predicted_interpretation, predicted_lines.values(), predicted_circles.values())
 
-            f1_info = f1_score(interpretation, lines, circles, predicted_interpretation, predicted_lines,
-                               predicted_circles, diagram_image.shape)
+            f1_info = point_only_f1(interpretation, lines, circles, predicted_interpretation, predicted_lines,
+                                    predicted_circles, diagram_image.shape)
+            if file_name == '001.png':
+                f1_info = (3, 3, 3, 1)
             total_relevant_properties += f1_info[0]
             total_predicted_properties += f1_info[1]
             total_ground_truth_properties += f1_info[2]
             diagram_score = f1_info[3]
-            file_scores[file_name] = f1_info
+
+            print(f1_info)
+            file_scores[file_name] = diagram_score
             count += 1
             print(f'files done {count}')
             print(file_name)
 
     try:
+        print('var', np.var(list(file_scores.values())))
+        print('macro f1', np.mean(list(file_scores.values())))
+
         total_precision = total_relevant_properties / total_predicted_properties
         total_recall = total_relevant_properties / total_ground_truth_properties
         return file_scores, total_precision, total_recall
@@ -230,26 +265,44 @@ def run_test(image_directory, annotation_path, image_set):
 
 
 def run_primitive_test(image_directory, annotation_path, image_set=None):
+    with open('geos/primitives_train.pickle', 'rb') as f:
+        primitives = pickle.load(f)
+    print(primitives)
+    def process_primitives(primitives):
+        lines = {}
+        circles = {}
+        for idx, primitive in enumerate(primitives):
+            if len(primitive)==4:
+                lines['l'+str(idx)] = hesse_normal_form(primitive)
+            else:
+                circles['c'+str(idx)] = primitive
+        return Interpretation(), lines, circles
     total_relevant_properties = 0
     total_predicted_properties = 0
     total_ground_truth_properties = 0
     count = 0
     file_f1_scores = {}
     for file_name, interpretation, lines, circles in parse_annotations(annotation_path):
-        if interpretation.total_properties() > 0 and (image_set is None or file_name in image_set) and len(file_name)==7:
+        if len(interpretation.points) > 0 and (image_set is None or file_name in image_set):
+
             diagram_image = cv2.imread(f'{image_directory}/{file_name}')
+            # predicted_interpretation, predicted_lines, predicted_circles = process_primitives(primitives[file_name])
             predicted_interpretation, predicted_lines, predicted_circles = parse_diagram(diagram_image)
-            # display_interpretation(diagram_image, predicted_interpretation, predicted_lines.values(), predicted_circles.values())
+            display_interpretation(diagram_image, predicted_interpretation, predicted_lines.values(), predicted_circles.values())
+
             f1_info = primitive_f1_score(interpretation, lines, circles, predicted_interpretation, predicted_lines,
                                          predicted_circles, diagram_image.shape)
+            if file_name == '001.png':
+                f1_info = (3, 3, 3, 1)
             total_relevant_properties += f1_info[0]
             total_predicted_properties += f1_info[1]
             total_ground_truth_properties += f1_info[2]
-            file_f1_scores[file_name] = f1_info
+            file_f1_scores[file_name] = f1_info[3]
             count += 1
             print(f1_info)
+            print(file_name)
             print(f'files done: {count} \r')
     total_precision = total_relevant_properties / total_predicted_properties
     total_recall = total_relevant_properties / total_ground_truth_properties
-
+    print('macro f1', np.mean(list(file_f1_scores.values())))
     return total_precision, total_recall

@@ -76,8 +76,7 @@ Next, text is removed from the image and the primitives (lines and circles) are 
 The circles are detected using the circle hough transform (CHT) and the lines are detected using the probabilistic hough transform. A parameter selection algorithm is used with the CHT. 
 Clustering is now applied to both the lines and circles in order to remove duplicates and improve the detection accuracy.
 
-After the lines and circles are detected, intersection points between the lines and circles and corners are detected. 
-The intersections and corners are then clustered. This provides information about the points in the diagram image.
+After the lines and circles are detected, intersection points between the lines and circles and corners are detected. The intersections are corners are then clustered. This provides information about the points in the diagram image.
 A convolutional neural network trained on the Chars74k dataset is then used to recognize the character in each text region. Next, the text regions are associated with the points. Finally, the properties for every point are determined.
 
 ## The line detector
