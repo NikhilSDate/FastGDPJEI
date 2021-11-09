@@ -184,6 +184,8 @@ def match_close_enough(line1, line2, image_size):
         angle_difference = angle_difference - np.pi
     elif 3 * np.pi / 2 <= angle_difference < 2 * np.pi:
         angle_difference = 2 * np.pi - angle_difference
+    elif angle_difference >= 2 * np.pi:
+        angle_difference = angle_difference - 2 * np.pi
     rho_difference = abs(rho1 - rho2)
     # TESTING_PARAM line_detector_close_enough_angle_threshold
     # TESTING_PARAM line_detector_close_enough_rho_threshold
@@ -328,7 +330,6 @@ def get_filtered_lines(img, filter_method='cluster'):
                 filtered_lines = filter_lines_p(hough_lines_p, np.array(np.array(image.shape) * 1 / factor))
                 hesse_lines = [np.array(hesse_normal_form(endpoints_line)) for endpoints_line in filtered_lines]
                 return hesse_lines
-
 
 # import os
 # import time

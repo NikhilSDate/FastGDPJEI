@@ -319,7 +319,7 @@ def get_primitives(image):
     return corners, lines, circles, intersections, text_regions
 
 
-def parse_diagram(diagram_image):
+def parse_diagram(diagram_image, detect_labels=False):
     corners, lines, circles, intersections, text_regions = get_primitives(diagram_image)
     primitives = list()
     for idx, intersection in enumerate(intersections.keys()):
@@ -332,7 +332,8 @@ def parse_diagram(diagram_image):
         line_dict[f'l{idx}'] = line
     for idx, circle in enumerate(circles):
         circle_dict[f'c{idx}'] = circle
-    interpretation = build_interpretation(primitives, lines, circles, intersections, text_regions, diagram_image.shape)
+    interpretation = build_interpretation(primitives, lines, circles, intersections, text_regions, diagram_image.shape,
+                                          detect_labels=detect_labels)
     interpretation.set_lines(line_dict)
     interpretation.set_circles(circle_dict)
     return interpretation, line_dict, circle_dict
@@ -350,7 +351,7 @@ def average_distance(point, points):
     return distance
 
 
-def build_interpretation(primitives, lines, circles, intersections, text_regions, image_shape):
+def build_interpretation(primitives, lines, circles, intersections, text_regions, image_shape, detect_labels):
     primitive_list = [primitive.coords for primitive in primitives]
     character_predictor = CharacterPredictor()
     # PARAM diagram_graph_builder_clustering_eps
@@ -362,42 +363,43 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
         cluster_list.append(PrimitiveGroup())
     for idx, label in enumerate(clustering.labels_):
         cluster_list[label].add(primitives[idx])
-    # clean this up
-    # upper = []
-    # numbers = []
-    # for idx, coords in enumerate(text_regions.keys()):
-    #
-    #     isupper, confidence = character_predictor.is_upper(text_regions[coords])
-    #     if isupper:
-    #         upper.append((Primitive(coords, 't', idx, character_type='upper'), confidence))
-    #     else:
-    #         numbers.append(Primitive(coords, 't', idx, character_type='upper'))
-    #     primitives.append(Primitive(coords, 't', idx, character_type='upper'))
-    # sorted_upper = [item[0] for item in sorted(upper, key=lambda item: item[1], reverse=True)]
-    # upper = sorted_upper
-    # search_queue = Queue()
-    # search_queue.put(SearchNode(primitives, lines, cluster_list))
-    # best_child = SearchNode(primitives, lines, cluster_list)
-    # offset_factor = Params.params['primitive_group_weight_offset_factor']
-    #
-    # while search_queue and upper:
-    #     node = search_queue.get()
-    #     if node.level >= len(upper):
-    #         break
-    #     children = node.generate_children(upper[node.level])
-    #     sorted_children = sorted(children, key=lambda x: x.fitness(
-    #         weight_offset=offset_factor * (image_shape[0] + image_shape[1]) / 2))
-    #     best_child = sorted_children[-1]
-    #
-    #     if len(sorted_children) < 1:
-    #         for child in sorted_children:
-    #             search_queue.put(child)
-    #     else:
-    #         for child in sorted_children[-1:]:
-    #             search_queue.put(child)
+    if detect_labels:
+        upper = []
+        numbers = []
+        for idx, coords in enumerate(text_regions.keys()):
+
+            isupper, confidence = character_predictor.is_upper(text_regions[coords])
+            if isupper:
+                upper.append((Primitive(coords, 't', idx, character_type='upper'), confidence))
+            else:
+                numbers.append(Primitive(coords, 't', idx, character_type='upper'))
+            primitives.append(Primitive(coords, 't', idx, character_type='upper'))
+        sorted_upper = [item[0] for item in sorted(upper, key=lambda item: item[1], reverse=True)]
+        upper = sorted_upper
+        search_queue = Queue()
+        search_queue.put(SearchNode(primitives, lines, cluster_list))
+        best_child = SearchNode(primitives, lines, cluster_list)
+        offset_factor = Params.params['primitive_group_weight_offset_factor']
+
+        while search_queue and upper:
+            node = search_queue.get()
+            if node.level >= len(upper):
+                break
+            children = node.generate_children(upper[node.level])
+            sorted_children = sorted(children, key=lambda x: x.fitness(
+                weight_offset=offset_factor * (image_shape[0] + image_shape[1]) / 2))
+            best_child = sorted_children[-1]
+
+            if len(sorted_children) < 1:
+                for child in sorted_children:
+                    search_queue.put(child)
+            else:
+                for child in sorted_children[-1:]:
+                    search_queue.put(child)
+    else:
+        best_child = SearchNode(primitives, lines, cluster_list)
 
     diagram_interpretation = Interpretation()
-    best_child = SearchNode(primitives, lines, cluster_list)
     # for cluster in best_child.points:
     #     if cluster.contains('t'):
 
@@ -542,8 +544,9 @@ def display_interpretation(image, interpretation, lines, circles):
     cv2.imshow('interpretation', image)
     cv2.waitKey()
 
-# diagram = cv2.imread('../experiments/data/practice/052.png')
-# interpretation, lines, circles = parse_diagram(diagram)
+
+# diagram = cv2.imread('X:/official/039.png')
+# interpretation, lines, circles = parse_diagram(diagram, detect_labels=True)
 # print(interpretation)
 # display_interpretation(diagram, interpretation, lines.values(), circles.values())
 # cv2.destroyAllWindows()
@@ -553,13 +556,13 @@ def display_interpretation(image, interpretation, lines, circles):
 # count = 0
 # selecting = 0
 # totalstart = time.time()
-# for filename in os.listdir('../experiments/data/practice'):
+# for filename in os.listdir('X:/official'):
 #     if filename.endswith('.png'):
 #         try:
-#             diagram = cv2.imread('../experiments/data/practice/' + filename)
+#             diagram = cv2.imread('X:/official/' + filename)
 #
-#             get_primitives(diagram)
-#
+#             interpretation, lines, circles = parse_diagram(diagram)
+#             display_interpretation(diagram, interpretation, lines.values(), circles.values())
 #             stop = time.time()
 #             print(time.time() - totalstart)
 #             count += 1

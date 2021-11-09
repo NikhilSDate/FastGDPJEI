@@ -183,12 +183,11 @@ def parse_annotations(annotation_path):
                     line_points = annotation.attrib['points'].split(';')
                     point1 = [float(coord) for coord in line_points[0].split(',')]
                     point2 = [float(coord) for coord in line_points[1].split(',')]
-                    ground_truth_lines[annotation[0].text] = np.array((point1, point2))
                     if annotation[0]:
                         ground_truth_lines[annotation[0].text] = (point1, point2)
                     else:
-                        ground_truth_lines['l'+str(line_idx)] = (point1, point2)
-                        line_idx+=1
+                        ground_truth_lines['l' + str(line_idx)] = (point1, point2)
+                        line_idx += 1
                 elif annotation.attrib['label'] == 'Circle':
                     circle_points = annotation.attrib['points'].split(';')
                     point1 = [float(coord) for coord in circle_points[0].split(',')]
@@ -196,8 +195,8 @@ def parse_annotations(annotation_path):
                     if annotation[0]:
                         ground_truth_circles[annotation[0].text] = (point1, point2)
                     else:
-                        ground_truth_circles['c'+str(circle_idx)] = (point1, point2)
-                        circle_idx+=1
+                        ground_truth_circles['c' + str(circle_idx)] = (point1, point2)
+                        circle_idx += 1
 
             processed_circles = dict()
             for key, circle in ground_truth_circles.items():
@@ -222,8 +221,6 @@ def run_test(image_directory, annotation_path, image_set):
             interpretation.add_point(point)
         return interpretation, {}, {}
 
-
-
     total_relevant_properties = 0
     total_predicted_properties = 0
     total_ground_truth_properties = 0
@@ -239,8 +236,6 @@ def run_test(image_directory, annotation_path, image_set):
 
             f1_info = point_only_f1(interpretation, lines, circles, predicted_interpretation, predicted_lines,
                                     predicted_circles, diagram_image.shape)
-            if file_name == '001.png':
-                f1_info = (3, 3, 3, 1)
             total_relevant_properties += f1_info[0]
             total_predicted_properties += f1_info[1]
             total_ground_truth_properties += f1_info[2]
@@ -265,18 +260,19 @@ def run_test(image_directory, annotation_path, image_set):
 
 
 def run_primitive_test(image_directory, annotation_path, image_set=None):
-    with open('geos/primitives_train.pickle', 'rb') as f:
+    with open('geos/primitives_test.pickle', 'rb') as f:
         primitives = pickle.load(f)
-    print(primitives)
+
     def process_primitives(primitives):
         lines = {}
         circles = {}
         for idx, primitive in enumerate(primitives):
-            if len(primitive)==4:
-                lines['l'+str(idx)] = hesse_normal_form(primitive)
+            if len(primitive) == 4:
+                lines['l' + str(idx)] = hesse_normal_form(primitive)
             else:
-                circles['c'+str(idx)] = primitive
+                circles['c' + str(idx)] = primitive
         return Interpretation(), lines, circles
+
     total_relevant_properties = 0
     total_predicted_properties = 0
     total_ground_truth_properties = 0
@@ -284,16 +280,14 @@ def run_primitive_test(image_directory, annotation_path, image_set=None):
     file_f1_scores = {}
     for file_name, interpretation, lines, circles in parse_annotations(annotation_path):
         if len(interpretation.points) > 0 and (image_set is None or file_name in image_set):
-
             diagram_image = cv2.imread(f'{image_directory}/{file_name}')
             # predicted_interpretation, predicted_lines, predicted_circles = process_primitives(primitives[file_name])
             predicted_interpretation, predicted_lines, predicted_circles = parse_diagram(diagram_image)
-            display_interpretation(diagram_image, predicted_interpretation, predicted_lines.values(), predicted_circles.values())
+            # display_interpretation(diagram_image, predicted_interpretation, predicted_lines.values(),
+            #                        predicted_circles.values())
 
             f1_info = primitive_f1_score(interpretation, lines, circles, predicted_interpretation, predicted_lines,
                                          predicted_circles, diagram_image.shape)
-            if file_name == '001.png':
-                f1_info = (3, 3, 3, 1)
             total_relevant_properties += f1_info[0]
             total_predicted_properties += f1_info[1]
             total_ground_truth_properties += f1_info[2]
