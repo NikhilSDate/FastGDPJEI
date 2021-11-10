@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/EuclideanGeometrySolver.iml" filepath="$PROJECT_DIR$/.idea/EuclideanGeometrySolver.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/FastGDP.iml" filepath="$PROJECT_DIR$/.idea/FastGDP.iml" />
     </modules>
   </component>
 </project>

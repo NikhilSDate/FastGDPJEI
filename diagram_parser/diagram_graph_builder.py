@@ -306,7 +306,7 @@ def get_weak_primitives(corners, intersections, centroids, strong_items):
     return weak_corners_list, weak_ints_set, weak_centroids_list
 
 
-def get_primitives(image):
+def get_primitives_and_points(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     filtered = remove_text(gray)
     circles = detect_circles(filtered)
@@ -318,9 +318,18 @@ def get_primitives(image):
     text_regions = text_components_with_centroids(image)
     return corners, lines, circles, intersections, text_regions
 
+def get_primitives(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    filtered = remove_text(gray)
+    circles = detect_circles(filtered)
+    masked = remove_circles(filtered, circles)
+
+    lines = get_filtered_lines(masked)
+    return lines, circles
+
 
 def parse_diagram(diagram_image, detect_labels=False):
-    corners, lines, circles, intersections, text_regions = get_primitives(diagram_image)
+    corners, lines, circles, intersections, text_regions = get_primitives_and_points(diagram_image)
     primitives = list()
     for idx, intersection in enumerate(intersections.keys()):
         primitives.append(Primitive(intersection, 'i', idx))
@@ -353,7 +362,6 @@ def average_distance(point, points):
 
 def build_interpretation(primitives, lines, circles, intersections, text_regions, image_shape, detect_labels):
     primitive_list = [primitive.coords for primitive in primitives]
-    character_predictor = CharacterPredictor()
     # PARAM diagram_graph_builder_clustering_eps
     dbscan_eps = Params.params['diagram_graph_builder_dbscan_eps']
     clustering = DBSCAN(eps=dbscan_eps * (image_shape[0] + image_shape[1]) / 2, min_samples=1).fit(primitive_list)
@@ -364,6 +372,8 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
     for idx, label in enumerate(clustering.labels_):
         cluster_list[label].add(primitives[idx])
     if detect_labels:
+        character_predictor = CharacterPredictor()
+
         upper = []
         numbers = []
         for idx, coords in enumerate(text_regions.keys()):
@@ -470,7 +480,8 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
     #         for child in sorted_children[-1:]:
     #             number_search_queue.put(child)
     # diagram_interpretation.set_info_labels(best_child_with_numbers.info_labels)
-    # diagram_interpretation.set_lines(lines)
+    diagram_interpretation.set_lines(lines)
+    diagram_interpretation.set_circles(circles)
     return diagram_interpretation
 
 
@@ -478,9 +489,28 @@ def build_graph_from_interpretation(interpretation):
     graph = nx.Graph()
     for point in interpretation:
         graph.add_node(point.label)
+    line_points = dict()
+    for key, line in interpretation.lines.items():
+        points_on_line = []
+        for point in interpretation.points:
+            if point.has_property(('lieson', key)):
+                points_on_line.append(point)
+        if np.pi / 4 < inclination(line[1]) < 3 * np.pi / 4:
+            points_on_line = sorted(points_on_line, key=lambda p: p.coords[1])
+        else:
+            points_on_line = sorted(points_on_line, key=lambda p: p.coords[0])
+        line_points[key] = points_on_line
+
     for (point1, point2) in itertools.combinations(interpretation.points, 2):
         if len(point1.properties.intersection(point2.properties)):
-            graph.add_edge(point1.label, point2.label)
+            data = []
+            for common_property in point1.properties.intersection(point2.properties):
+                if common_property[0] == 'lieson' and common_property[1][0]=='l':
+                    points = line_points[common_property[1]]
+                    idx1 = points.index(point1)
+                    idx2 = points.index(point2)
+                    data.extend(points[min(idx1, idx2)+1:max(idx1, idx2)])
+            graph.add_edge(point1.label, point2.label, data=data)
 
     return graph
 
@@ -557,14 +587,17 @@ def display_interpretation(image, interpretation, lines, circles):
 # selecting = 0
 # totalstart = time.time()
 # for filename in os.listdir('../experiments/data/images'):
-#     if filename.endswith('.png'):
+#     if filename.endswith('.png') and len(filename) == 8:
 #         try:
 #             diagram = cv2.imread('../experiments/data/images/' + filename)
 #
 #             interpretation, lines, circles = parse_diagram(diagram)
+#             # display_interpretation(diagram, interpretation, lines.values(), circles.values())
+#             graph = build_graph_from_interpretation(interpretation)
 #             stop = time.time()
 #             print(time.time() - totalstart)
 #             count += 1
+#             print(filename)
 #             print(f'files done: {count}\r')
 #         except IndexError:
 #             pass

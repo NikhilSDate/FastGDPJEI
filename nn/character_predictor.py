@@ -4,7 +4,6 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from experiments.params import Params
 import string
 import cv2.cv2 as cv2
-from cv2 import dnn_superres
 
 import numpy as np
 from sklearn import metrics
