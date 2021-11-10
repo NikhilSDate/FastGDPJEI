@@ -24,7 +24,6 @@ class ParamOptimizer:
 
     def run_trial(self, input_path, output_path, space, max_evals):
 
-
         if input_path is None:
             trials = self.get_initial_trials(space)
         else:
@@ -68,22 +67,19 @@ class ParamOptimizer:
         space['diagram_graph_builder_dbscan_eps'] = hp.uniform('diagram_graph_builder_dbscan_eps', 0.01, 0.2)
         space['corner_response_map_ksize'] = hp.quniform('corner_response_map_ksize', 1, 15, 1)
         space['corner_response_map_iters'] = hp.quniform('corner_response_map_iters', 1, 10, 1)
-        space['character_detector_confusion_threshold'] = hp.quniform('character_detector_confusion_threshold', 10, 100, 1)
+        space['character_detector_confusion_threshold'] = hp.quniform('character_detector_confusion_threshold', 10, 100,
+                                                                      1)
         return space
 
-    @staticmethod
-    def point_optimization_objective(args, image_set):
+    def point_optimization_objective(self, args, image_set):
         Params.update_params(args)
-        file_scores, total_precision, total_recall = run_test('data/practice', 'data/practice/annotations.xml', image_set)
-        total_f1 = 2*total_precision*total_recall/(total_precision+total_recall)
-        print(total_precision, total_recall)
+        file_scores, total_precision, total_recall = run_test(self.image_path, self.annotations_path, image_set)
+        total_f1 = 2 * total_precision * total_recall / (total_precision + total_recall)
         return -total_f1
 
-    @staticmethod
-    def primitive_optimization_objective(args, image_set):
+    def primitive_optimization_objective(self, args, image_set):
         Params.update_params(args)
-        total_precision, total_recall = run_primitive_test('data/practice', 'data/practice/annotations.xml', image_set)
-        print(total_precision, total_recall)
+        total_precision, total_recall = run_primitive_test(self.image_path, self.annotations_path, image_set)
         f1 = 2 * total_precision * total_recall / (total_precision + total_recall)
         return 1 - f1
 
@@ -99,18 +95,9 @@ class ParamOptimizer:
         return space_eval(space, best_params)
 
 
-optimizer = ParamOptimizer(ParamOptimizer.point_optimization_objective, 'data/annotations.xml', 'data/images')
-# optimizer.run_trial('optimization_results/point_detection_new/1.pickle', 'optimization_results/point_detection_new/2.pickle', optimizer.get_point_optimization_space(), 50)
-# print(ParamOptimizer.point_optimization_objective(ParamOptimizer.get_best_params('optimization_results/point_detection_new/2.pickle', optimizer.get_point_optimization_space()), None))
-print(ParamOptimizer.point_optimization_objective({}, None))
-# with open('old_filtering.pickle', 'rb+') as f:
-#     old_scores = pickle.load(f)
-# with open('new_filtering.pickle', 'rb+') as f:
-#     new_scores = pickle.load(f)
-# for key, _ in old_scores.items():
-#     if new_scores[key][3]<old_scores[key][3]:
-#         print(key)
-#         print(f'new scores: {new_scores[key]}')
-#         print(f'old scores: {old_scores[key]}')
-#         print()
-
+optimizer = ParamOptimizer(ParamOptimizer.point_optimization_objective, 'data/practice/annotations.xml', 'data/practice')
+file_set = set()
+for file_name, _, _, _ in parse_annotations(optimizer.annotations_path):
+    if len(file_name) == 7:
+        file_set.add(file_name)
+optimizer.point_optimization_objective({}, file_set)

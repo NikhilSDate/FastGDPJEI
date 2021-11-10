@@ -209,8 +209,9 @@ def parse_annotations(annotation_path):
 
 
 def run_test(image_directory, annotation_path, image_set):
-    with open('geos/points_test.pickle', 'rb') as f:
+    with open('geos/points_train.pickle', 'rb') as f:
         points = pickle.load(f)
+
 
     def build_interpretation(image_points):
         interpretation = Interpretation()
@@ -224,15 +225,18 @@ def run_test(image_directory, annotation_path, image_set):
     total_relevant_properties = 0
     total_predicted_properties = 0
     total_ground_truth_properties = 0
-    file_scores = {}
+    file_f1_scores = {}
+    file_precisions = {}
+    file_recalls = {}
+    file_f1_info = {}
+
     count = 0
     for file_name, interpretation, lines, circles in parse_annotations(annotation_path):
         if len(interpretation.points) > 0 and (image_set is None or file_name in image_set):
             diagram_image = cv2.imread(f'{image_directory}/{file_name}')
 
-            predicted_interpretation, predicted_lines, predicted_circles = parse_diagram(diagram_image)
-            # predicted_interpretation, predicted_lines, predicted_circles = build_interpretation(points[file_name])
-            # display_interpretation(diagram_image, predicted_interpretation, predicted_lines.values(), predicted_circles.values())
+            # predicted_interpretation, predicted_lines, predicted_circles = parse_diagram(diagram_image)
+            predicted_interpretation, predicted_lines, predicted_circles = build_interpretation(points[file_name])
 
             f1_info = point_only_f1(interpretation, lines, circles, predicted_interpretation, predicted_lines,
                                     predicted_circles, diagram_image.shape)
@@ -240,23 +244,43 @@ def run_test(image_directory, annotation_path, image_set):
             total_predicted_properties += f1_info[1]
             total_ground_truth_properties += f1_info[2]
             diagram_score = f1_info[3]
-
-            print(f1_info)
-            file_scores[file_name] = diagram_score
+            file_f1_scores[file_name] = diagram_score
+            file_f1_info[file_name] = f1_info
+            try:
+                file_precisions[file_name] = f1_info[0]/f1_info[1]
+            except ZeroDivisionError:
+                file_precisions[file_name] = 0
+            try:
+                file_recalls[file_name] = f1_info[0] / f1_info[2]
+            except ZeroDivisionError:
+                file_recalls[file_name] = 0
             count += 1
-            print(f'files done {count}')
+            print(f'files done: {count}')
             print(file_name)
+            # display_interpretation(diagram_image, predicted_interpretation, predicted_lines.values(), predicted_circles.values())
+
 
     try:
-        print('var', np.var(list(file_scores.values())))
-        print('macro f1', np.mean(list(file_scores.values())))
+        print(f'f1: {get_metrics(file_f1_scores)}')
+        print(f'precision: {get_metrics(file_precisions)}')
+        print(f'recall: {get_metrics(file_recalls)}')
 
         total_precision = total_relevant_properties / total_predicted_properties
         total_recall = total_relevant_properties / total_ground_truth_properties
-        return file_scores, total_precision, total_recall
+        print(total_precision)
+        print(total_recall)
+        print((2*total_precision*total_recall)/(total_precision+total_recall))
+        with open('final_results/point_train_geos.pickle', 'wb') as f:
+            pickle.dump(file_f1_info, f)
+        return file_f1_scores, total_precision, total_recall
 
     except ZeroDivisionError:
         return 0, 0, 0
+
+def get_metrics(scores):
+    mean = np.mean(list(scores.values()))
+    var = np.var(list(scores.values()))
+    return mean, var
 
 
 def run_primitive_test(image_directory, annotation_path, image_set=None):
