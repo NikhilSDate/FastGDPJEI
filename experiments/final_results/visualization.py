@@ -15,9 +15,9 @@ def compare():
     sns.histplot(geos_scores, kde=True, ax=axs[1], bins=15)
     plt.show()
 
-with open('time/complex_fastgdp_complete_nolabel.pickle', 'rb') as f:
+with open('time/test_fastgdp_complete_nolabel.pickle', 'rb') as f:
     times1 = pickle.load(f)
-with open('time/complex_geos_point_nolabel.pickle', 'rb') as f:
+with open('time/test_geos_point_nolabel.pickle', 'rb') as f:
     times2 = pickle.load(f)
 print(sum(times1.values()))
 print(sum(times2.values()))
