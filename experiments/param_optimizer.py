@@ -96,12 +96,13 @@ class ParamOptimizer:
         return space_eval(space, best_params)
 
 
-optimizer = ParamOptimizer(ParamOptimizer.point_optimization_objective, 'data/images/annotations.xml', 'data/images')
+optimizer = ParamOptimizer(ParamOptimizer.point_optimization_objective, 'data/practice/annotations.xml', 'data/practice')
+
 file_set = set()
 for file_name, _, _, _ in parse_annotations(optimizer.annotations_path):
     if len(file_name) == 7:
         file_set.add(file_name)
 
-
-task = parse_diagram
-run_time_test(task, 'data/images', 5, file_set)
+# optimizer.point_optimization_objective({}, file_set)
+# task = parse_diagram
+run_time_test(parse_diagram, 'data/practice', 5, file_set)

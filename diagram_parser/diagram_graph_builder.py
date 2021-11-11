@@ -78,15 +78,15 @@ def calculate_intersection(structure1, structure2, corner_response_map):
                 return float(solutions[0][0].evalf()), float(solutions[0][1].evalf())
             else:
                 return float(solutions[1][0].evalf()), float(solutions[1][1].evalf())
+        elif perp_distance > r:
+            return None
         else:
-            line_eq = sp.Eq(A * x + B * y + C, 0)
-            solutions = sp.solve([circle_eq, line_eq], (x, y))
-            if type(solutions[0][0]) == sp.core.add.Add or type(solutions[0][0]) == sp.core.add.Add or type(
-                    solutions[1][0]) == sp.core.add.Add or type(solutions[1][1]) == sp.core.add.Add:
-                return None
-            solution1 = (float(solutions[0][0].evalf()), float(solutions[0][1].evalf()))
-
-            solution2 = (float(solutions[1][0].evalf()), float(solutions[1][1].evalf()))
+            if B == 0:
+                p1 = np.array([-C / A, 0])
+            else:
+                p1 = np.array([0, -C / B])
+            v = np.array([B, -A])
+            solution1, solution2 = line_circle_intersection(p1, v, (x0, y0), r)
             valid_sols = []
             try:
                 if corner_response_map[int(solution1[1])][int(solution1[0])] > 0:
@@ -114,35 +114,24 @@ def calculate_intersection(structure1, structure2, corner_response_map):
         x1 = structure2[0]
         y1 = structure2[1]
         r1 = structure2[2]
-
-        x = sp.Symbol('x')
-        y = sp.Symbol('y')
-        circle1_eq = sp.Eq((x - x0) ** 2 + (y - y0) ** 2, r0 ** 2)
-        circle2_eq = sp.Eq((x - x1) ** 2 + (y - y1) ** 2, r1 ** 2)
-
-        solutions = sp.solve([circle1_eq, circle2_eq], (x, y))
-        if len(solutions) == 0:
+        center_dist = sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2)
+        if center_dist > (r0 + r1):
             return None
-        if type(solutions[0][0]) == sp.core.add.Add or type(solutions[0][0]) == sp.core.add.Add or type(
-                solutions[1][0]) == sp.core.add.Add or type(solutions[1][1]) == sp.core.add.Add:
-            return None
-        solution1 = (float(solutions[0][0].evalf()), float(solutions[0][1].evalf()))
+        solution1, solution2 = circle_circle_intersection(x0, y0, r0, x1, y1, r1)
 
-        solution2 = (float(solutions[1][0].evalf()), float(solutions[1][1].evalf()))
         valid_sols = []
         try:
-            if corner_response_map[int(solution1[1])][int(solution1[0])] > 0:
+            if corner_response_map[int(solution1[1])][int(solution1[0])] >= 0:
                 valid_sols.append(solution1)
         except IndexError:
             pass
         try:
-            if corner_response_map[int(solution2[1])][int(solution2[0])] > 0:
+            if corner_response_map[int(solution2[1])][int(solution2[0])] >= 0:
                 valid_sols.append(solution2)
         except IndexError:
             pass
 
         if len(valid_sols) == 2:
-            center_dist = sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2)
             eps = Params.params['circle_tangent_eps']
             if abs(center_dist - (r0 + r1)) / (r0 + r1) < eps:
                 np.mean([solution1, solution2], axis=0)
@@ -173,6 +162,29 @@ def calculate_intersection(structure1, structure2, corner_response_map):
         except np.linalg.LinAlgError:
             # Exception is thrown if lines are parallel
             return None
+
+
+def line_circle_intersection(p1, v, q, r):
+    a = np.dot(v, v)
+    b = 2 * np.dot(v, p1 - q)
+    c = np.dot(p1, p1) + np.dot(q, q) - 2 * np.dot(p1, q) - r ** 2
+    coeff = [a, b, c]
+    roots = np.roots(coeff)
+    sol1 = p1 + roots[0] * v
+    sol2 = p1 + roots[1] * v
+    return tuple(sol1), tuple(sol2)
+
+
+def circle_circle_intersection(x0, y0, r0, x1, y1, r1):
+    # http: // paulbourke.net / geometry / circlesphere /
+    d = sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2)
+    a = (r0 ** 2 - r1 ** 2 + d ** 2) / (2 * d)
+    h = sqrt(r0 ** 2 - a ** 2)
+    x2 = x0 + a * (x1 - x0) / d
+    y2 = y0 + a * (y1 - y0) / d
+    sol1 = ((x2 + h * (y1 - y0) / d), (y2 - h * (x1 - x0) / d))
+    sol2 = ((x2 - h * (y1 - y0) / d), (y2 + h * (x1 - x0) / d))
+    return sol1, sol2
 
 
 def point_to_line_distance(point_coordinates, line):
@@ -317,6 +329,7 @@ def get_primitives_and_points(image):
     intersections = get_merged_intersections(lines, circles, image.shape, response_map)
     text_regions = text_components_with_centroids(image)
     return corners, lines, circles, intersections, text_regions
+
 
 def get_primitives(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -505,11 +518,11 @@ def build_graph_from_interpretation(interpretation):
         if len(point1.properties.intersection(point2.properties)):
             data = []
             for common_property in point1.properties.intersection(point2.properties):
-                if common_property[0] == 'lieson' and common_property[1][0]=='l':
+                if common_property[0] == 'lieson' and common_property[1][0] == 'l':
                     points = line_points[common_property[1]]
                     idx1 = points.index(point1)
                     idx2 = points.index(point2)
-                    data.extend(points[min(idx1, idx2)+1:max(idx1, idx2)])
+                    data.extend(points[min(idx1, idx2) + 1:max(idx1, idx2)])
             graph.add_edge(point1.label, point2.label, data=data)
 
     return graph
@@ -574,9 +587,8 @@ def display_interpretation(image, interpretation, lines, circles):
     cv2.imshow('interpretation', image)
     cv2.waitKey()
 
-
-# diagram = cv2.imread('X:/official/039.png')
-# interpretation, lines, circles = parse_diagram(diagram, detect_labels=True)
+# diagram = cv2.imread('test_images/Untitled.png')
+# interpretation, lines, circles = parse_diagram(diagram)
 # print(interpretation)
 # display_interpretation(diagram, interpretation, lines.values(), circles.values())
 # cv2.destroyAllWindows()
@@ -592,8 +604,7 @@ def display_interpretation(image, interpretation, lines, circles):
 #             diagram = cv2.imread('../experiments/data/images/' + filename)
 #
 #             interpretation, lines, circles = parse_diagram(diagram)
-#             # display_interpretation(diagram, interpretation, lines.values(), circles.values())
-#             graph = build_graph_from_interpretation(interpretation)
+#             display_interpretation(diagram, interpretation, lines.values(), circles.values())
 #             stop = time.time()
 #             print(time.time() - totalstart)
 #             count += 1

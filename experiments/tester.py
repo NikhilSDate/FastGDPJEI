@@ -236,8 +236,8 @@ def run_test(image_directory, annotation_path, image_set):
         if len(interpretation.points) > 0 and (image_set is None or file_name in image_set):
             diagram_image = cv2.imread(f'{image_directory}/{file_name}')
 
-            # predicted_interpretation, predicted_lines, predicted_circles = parse_diagram(diagram_image)
-            predicted_interpretation, predicted_lines, predicted_circles = build_interpretation(points[file_name])
+            predicted_interpretation, predicted_lines, predicted_circles = parse_diagram(diagram_image)
+            # predicted_interpretation, predicted_lines, predicted_circles = build_interpretation(points[file_name])
 
             f1_info = point_only_f1(interpretation, lines, circles, predicted_interpretation, predicted_lines,
                                     predicted_circles, diagram_image.shape)
@@ -270,7 +270,7 @@ def run_test(image_directory, annotation_path, image_set):
         print(total_precision)
         print(total_recall)
         print((2 * total_precision * total_recall) / (total_precision + total_recall))
-        with open('final_results/point_detection/point_test_geos.pickle', 'wb') as f:
+        with open('final_results/point_detection/point_complex_fastgdp.pickle', 'wb') as f:
             pickle.dump(file_f1_info, f)
         return file_f1_scores, total_precision, total_recall
 
@@ -349,7 +349,7 @@ def run_primitive_test(image_directory, annotation_path, image_set=None):
 
 def run_time_test(task, image_directory, num_iters, file_set):
     times = []
-    for _ in range(num_iters):
+    for i in range(num_iters):
         image_times = {}
         for file_name in os.listdir(image_directory):
             if file_name in file_set:
@@ -359,8 +359,9 @@ def run_time_test(task, image_directory, num_iters, file_set):
                 stop = time.time()
                 image_times[file_name] = stop - start
         times.append(image_times)
+        print(f'iters done: {i+1}')
     keys = times[0].keys()
     final_times = {key:(sum([iter_times[key]/num_iters for iter_times in times])) for key in keys}
-    with open('final_results/time/train_fastgdp_complete_nolabel.pickle', 'wb') as f:
+    with open('final_results/time/test_fastgdp_complete_nolabel.pickle', 'wb') as f:
         pickle.dump(final_times, f)
 
