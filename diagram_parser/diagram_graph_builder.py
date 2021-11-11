@@ -598,10 +598,10 @@ def display_interpretation(image, interpretation, lines, circles):
 # count = 0
 # selecting = 0
 # totalstart = time.time()
-# for filename in os.listdir('../experiments/data/images'):
-#     if filename.endswith('.png') and len(filename) == 8:
+# for filename in os.listdir('X:/image'):
+#     if filename.endswith('.png') and len(filename)==8:
 #         try:
-#             diagram = cv2.imread('../experiments/data/images/' + filename)
+#             diagram = cv2.imread('X:/image/' + filename)
 #
 #             interpretation, lines, circles = parse_diagram(diagram)
 #             display_interpretation(diagram, interpretation, lines.values(), circles.values())

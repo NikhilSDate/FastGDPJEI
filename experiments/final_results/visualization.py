@@ -78,7 +78,7 @@ def compute_metric(data, metric):
 def generate_csv(data1, data2, filename):
     header = ['metric', 'FastGDP', 'geosolver']
     metrics = ['macro_f1', 'macro_f1_var', 'macro_precision', 'macro_precision_var', 'macro_recall', 'macro_recall_var', 'micro_f1', 'micro_precision', 'micro_recall']
-    with open(f'csv/{filename}', 'w') as f:
+    with open(f'csv/{filename}', 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(header)
         for metric in metrics:
@@ -86,19 +86,29 @@ def generate_csv(data1, data2, filename):
             val2 = compute_metric(data2, metric)
             writer.writerow([metric, val1, val2])
 
-with open('point_detection/point_complex_fastgdp.pickle', 'rb') as f:
-    data1 = pickle.load(f)
-with open('point_detection/point_complex_geos.pickle', 'rb') as f:
-    data2 = pickle.load(f)
-generate_csv(data1.values(), data2.values(), 'complex_point.csv')
+# with open('primitive_detection/primitive_complex_fastgdp.pickle', 'rb') as f:
+#     data1 = pickle.load(f)
+# with open('primitive_detection/primitive_complex_geos.pickle', 'rb') as f:
+#     data2 = pickle.load(f)
+# generate_csv(data1.values(), data2.values(), 'complex_primitive.csv')
 
-# with open('time/test_fastgdp_complete_nolabel.pickle', 'rb') as f:
-#     times1 = pickle.load(f)
-# with open('time/test_geos_point_nolabel.pickle', 'rb') as f:
-#     times2 = pickle.load(f)
-# print(sum(times1.values()))
-# print(sum(times2.values()))
-# fig, axs = plt.subplots(ncols=2)
-# sns.histplot(times1, kde=True, ax=axs[0], bins=15)
-# sns.histplot(times2, kde=True, ax=axs[1], bins=15)
-# plt.show()
+
+
+with open('time/complex_fastgdp_primitive.pickle', 'rb') as f:
+    times1 = pickle.load(f)
+with open('time/complex_geos_primitive.pickle', 'rb') as f:
+    times2 = pickle.load(f)
+with open('time/complex_fastgdp_complete_nolabel.pickle', 'rb') as f:
+    times3 = pickle.load(f)
+with open('time/complex_geos_point_nolabel.pickle', 'rb') as f:
+    times4 = pickle.load(f)
+
+
+with open('csv/time_complex.csv', 'w', newline='') as f:
+    writer = csv.writer(f)
+    header = ['filename', 'FastGDP Primitive Detection', 'geosolver Primitive Detection', 'FastGDP Point Detection', 'geosolver Point Detection']
+    writer.writerow(header)
+    for key in times1.keys():
+        row = [key, times1[key], times2[key], times3[key], times4[key]]
+        writer.writerow(row)
+
