@@ -211,8 +211,8 @@ def parse_annotations(annotation_path):
 
 
 def run_test(image_directory, annotation_path, image_set):
-    with open('geos/points_test.pickle', 'rb') as f:
-        points = pickle.load(f)
+    # with open('geos/points_test.pickle', 'rb') as f:
+    #     points = pickle.load(f)
 
     def build_interpretation(image_points):
         interpretation = Interpretation()

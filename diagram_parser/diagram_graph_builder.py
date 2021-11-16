@@ -121,12 +121,12 @@ def calculate_intersection(structure1, structure2, corner_response_map):
 
         valid_sols = []
         try:
-            if corner_response_map[int(solution1[1])][int(solution1[0])] >= 0:
+            if corner_response_map[int(solution1[1])][int(solution1[0])] > 0:
                 valid_sols.append(solution1)
         except IndexError:
             pass
         try:
-            if corner_response_map[int(solution2[1])][int(solution2[0])] >= 0:
+            if corner_response_map[int(solution2[1])][int(solution2[0])] > 0:
                 valid_sols.append(solution2)
         except IndexError:
             pass
@@ -322,12 +322,22 @@ def get_primitives_and_points(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     filtered = remove_text(gray)
     circles = detect_circles(filtered)
+    circle_img = draw_circles(image, circles)
     masked = remove_circles(filtered, circles)
-
     lines = get_filtered_lines(masked)
+
     response_map, corners = get_corners(filtered)
     intersections = get_merged_intersections(lines, circles, image.shape, response_map)
     text_regions = text_components_with_centroids(image)
+    cv2.imwrite('samples/original.png', gray)
+    cv2.imwrite('samples/text_removed.png', filtered)
+    cv2.imwrite('samples/circles.png', circle_img)
+    cv2.imwrite('samples/circle_removed.png', masked)
+    cv2.imwrite('samples/lines.png', draw_lines(cv2.cvtColor(masked, cv2.COLOR_GRAY2BGR), lines))
+    cv2.imwrite('samples/response_map.png', response_map)
+    cv2.imwrite('samples/points.png', draw_points(image, [*intersections, *corners]))
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
     return corners, lines, circles, intersections, text_regions
 
 
@@ -355,7 +365,7 @@ def parse_diagram(diagram_image, detect_labels=False):
     for idx, circle in enumerate(circles):
         circle_dict[f'c{idx}'] = circle
     interpretation = build_interpretation(primitives, lines, circles, intersections, text_regions, diagram_image.shape,
-                                          detect_labels=detect_labels)
+                                          detect_labels=detect_labels, image=diagram_image)
     interpretation.set_lines(line_dict)
     interpretation.set_circles(circle_dict)
     return interpretation, line_dict, circle_dict
@@ -373,11 +383,13 @@ def average_distance(point, points):
     return distance
 
 
-def build_interpretation(primitives, lines, circles, intersections, text_regions, image_shape, detect_labels):
+def build_interpretation(primitives, lines, circles, intersections, text_regions, image_shape, detect_labels, image):
     primitive_list = [primitive.coords for primitive in primitives]
     # PARAM diagram_graph_builder_clustering_eps
     dbscan_eps = Params.params['diagram_graph_builder_dbscan_eps']
     clustering = DBSCAN(eps=dbscan_eps * (image_shape[0] + image_shape[1]) / 2, min_samples=1).fit(primitive_list)
+    cv2.imwrite('samples/clusters.png', draw_points(image, primitive_list, clustering.labels_))
+    cv2.waitKey()
     cluster_list = []
     num_clusters = max(clustering.labels_) + 1
     for _ in range(num_clusters):
@@ -555,6 +567,21 @@ def get_point_projections(lines, interpretation):
             points_on_line[line_index] = sorted(points, key=lambda p: p[1][0])
     return points_on_line
 
+def draw_points(image, points, cluster_labels=None):
+    if cluster_labels is not None:
+        num_clusters = np.max(cluster_labels)+1
+    img_copy = image.copy()
+    for idx, point in enumerate(points):
+        if cluster_labels is not None:
+            hue = 179 * cluster_labels[idx] / num_clusters
+            hsv = np.uint8([[[hue, 255, 255]]])
+            rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]
+            color = rgb.tolist()
+        else:
+            color = (255, 0, 0)
+
+        cv2.circle(img_copy, (int(point[0]), int(point[1])), 2, color=color, thickness=-1)
+    return img_copy
 
 def find_sk_line(hesse_line):
     rho = hesse_line[0]
@@ -569,29 +596,29 @@ def find_sk_line(hesse_line):
 
     return skobj.Line(point, direction)
 
-
 def display_interpretation(image, interpretation, lines, circles):
+    point_img = image.copy()
     for idx, point in enumerate(interpretation):
         hue = 179 * idx / len(interpretation.points)
         hsv = np.uint8([[[hue, 255, 255]]])
         rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]
         int_coords = (int(point.coords[0]), int(point.coords[1]))
 
-        cv2.circle(image, int_coords, 2, rgb.tolist(), -1)
+        cv2.circle(point_img, int_coords, 2, rgb.tolist(), -1)
 
-        cv2.putText(image, point.label, int_coords, cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 0))
+        cv2.putText(point_img, point.label, int_coords, cv2.FONT_HERSHEY_DUPLEX, 0.75, (0, 0, 0))
     line_img = draw_lines(image, lines)
     circle_img = draw_circles(image, circles)
     cv2.imshow('lines', line_img)
     cv2.imshow('circles', circle_img)
-    cv2.imshow('interpretation', image)
+    cv2.imwrite('samples/final.png', point_img)
     cv2.waitKey()
+    cv2.destroyAllWindows()
 
-# diagram = cv2.imread('test_images/Untitled.png')
-# interpretation, lines, circles = parse_diagram(diagram)
-# print(interpretation)
-# display_interpretation(diagram, interpretation, lines.values(), circles.values())
-# cv2.destroyAllWindows()
+
+diagram = cv2.imread('../experiments/data/practice/043.png')
+interpretation, lines, circles = parse_diagram(diagram)
+display_interpretation(diagram, interpretation, lines.values(), circles.values())
 # import os
 # import time
 #

@@ -114,9 +114,9 @@ def objective_function(param2, min_radius, num_circles, max_param_2, max_radius,
 def draw_circles(image, circles):
     img_copy = image.copy()
     for i in circles:
-        cv2.circle(img_copy, (int(i[0]), int(i[1])), int(i[2]), (0, 255, 0), 2)
+        cv2.circle(img_copy, (int(i[0]), int(i[1])), int(i[2]), (0, 255, 0), 1)
         # draw the center of the circle
-        cv2.circle(img_copy, (int(i[0]), int(i[1])), 2, (0, 0, 255), 3)
+        # cv2.circle(img_copy, (int(i[0]), int(i[1])), 2, (0, 0, 255), 3)
     return img_copy
 
 

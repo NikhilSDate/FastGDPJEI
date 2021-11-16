@@ -272,11 +272,11 @@ def draw_lines(img, lines):
         x0 = a * rho
         y0 = b * rho
         x1 = int(x0 + 1000 * (-b))
-        y1 = int(y0 + 1000 * (a))
+        y1 = int(y0 + 1000 * a)
         x2 = int(x0 - 1000 * (-b))
-        y2 = int(y0 - 1000 * (a))
+        y2 = int(y0 - 1000 * a)
 
-        cv2.line(img_copy, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        cv2.line(img_copy, (x1, y1), (x2, y2), (0, 0, 255), 1)
     return img_copy
 
     # plt.hist(distances_list,density=True,bins=30)
