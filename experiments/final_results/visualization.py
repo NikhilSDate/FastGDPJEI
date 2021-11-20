@@ -86,29 +86,24 @@ def generate_csv(data1, data2, filename):
             val2 = compute_metric(data2, metric)
             writer.writerow([metric, val1, val2])
 
-# with open('primitive_detection/primitive_complex_fastgdp.pickle', 'rb') as f:
-#     data1 = pickle.load(f)
-# with open('primitive_detection/primitive_complex_geos.pickle', 'rb') as f:
-#     data2 = pickle.load(f)
-# generate_csv(data1.values(), data2.values(), 'complex_primitive.csv')
 
 
+def write_time_csv():
+    with open('time/complex_fastgdp_primitive.pickle', 'rb') as f:
+        times1 = pickle.load(f)
+    with open('time/complex_geos_primitive.pickle', 'rb') as f:
+        times2 = pickle.load(f)
+    with open('time/complex_fastgdp_complete_nolabel.pickle', 'rb') as f:
+        times3 = pickle.load(f)
+    with open('time/complex_geos_point_nolabel.pickle', 'rb') as f:
+        times4 = pickle.load(f)
 
-with open('time/complex_fastgdp_primitive.pickle', 'rb') as f:
-    times1 = pickle.load(f)
-with open('time/complex_geos_primitive.pickle', 'rb') as f:
-    times2 = pickle.load(f)
-with open('time/complex_fastgdp_complete_nolabel.pickle', 'rb') as f:
-    times3 = pickle.load(f)
-with open('time/complex_geos_point_nolabel.pickle', 'rb') as f:
-    times4 = pickle.load(f)
 
-
-with open('csv/time_complex.csv', 'w', newline='') as f:
-    writer = csv.writer(f)
-    header = ['filename', 'FastGDP Primitive Detection', 'geosolver Primitive Detection', 'FastGDP Point Detection', 'geosolver Point Detection']
-    writer.writerow(header)
-    for key in times1.keys():
-        row = [key, times1[key], times2[key], times3[key], times4[key]]
-        writer.writerow(row)
+    with open('csv/time_complex.csv', 'w', newline='') as f:
+        writer = csv.writer(f)
+        header = ['filename', 'FastGDP Primitive Detection', 'geosolver Primitive Detection', 'FastGDP Point Detection', 'geosolver Point Detection']
+        writer.writerow(header)
+        for key in times1.keys():
+            row = [key, times1[key], times2[key], times3[key], times4[key]]
+            writer.writerow(row)
 

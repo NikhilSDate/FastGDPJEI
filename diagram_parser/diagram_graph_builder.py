@@ -177,14 +177,17 @@ def line_circle_intersection(p1, v, q, r):
 
 def circle_circle_intersection(x0, y0, r0, x1, y1, r1):
     # http: // paulbourke.net / geometry / circlesphere /
-    d = sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2)
-    a = (r0 ** 2 - r1 ** 2 + d ** 2) / (2 * d)
-    h = sqrt(r0 ** 2 - a ** 2)
-    x2 = x0 + a * (x1 - x0) / d
-    y2 = y0 + a * (y1 - y0) / d
-    sol1 = ((x2 + h * (y1 - y0) / d), (y2 - h * (x1 - x0) / d))
-    sol2 = ((x2 - h * (y1 - y0) / d), (y2 + h * (x1 - x0) / d))
-    return sol1, sol2
+    try:
+        d = sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2)
+        a = (r0 ** 2 - r1 ** 2 + d ** 2) / (2 * d)
+        h = sqrt(r0 ** 2 - a ** 2)
+        x2 = x0 + a * (x1 - x0) / d
+        y2 = y0 + a * (y1 - y0) / d
+        sol1 = ((x2 + h * (y1 - y0) / d), (y2 - h * (x1 - x0) / d))
+        sol2 = ((x2 - h * (y1 - y0) / d), (y2 + h * (x1 - x0) / d))
+        return sol1, sol2
+    finally:
+        return [[], []]
 
 
 def point_to_line_distance(point_coordinates, line):
@@ -336,8 +339,8 @@ def get_primitives_and_points(image):
     cv2.imwrite('samples/lines.png', draw_lines(cv2.cvtColor(masked, cv2.COLOR_GRAY2BGR), lines))
     cv2.imwrite('samples/response_map.png', response_map)
     cv2.imwrite('samples/points.png', draw_points(image, [*intersections, *corners]))
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
     return corners, lines, circles, intersections, text_regions
 
 
@@ -567,7 +570,7 @@ def get_point_projections(lines, interpretation):
             points_on_line[line_index] = sorted(points, key=lambda p: p[1][0])
     return points_on_line
 
-def draw_points(image, points, cluster_labels=None):
+def draw_points(image, points, cluster_labels=None, radius=2, point_color=(255, 225, 0)):
     if cluster_labels is not None:
         num_clusters = np.max(cluster_labels)+1
     img_copy = image.copy()
@@ -578,9 +581,9 @@ def draw_points(image, points, cluster_labels=None):
             rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]
             color = rgb.tolist()
         else:
-            color = (255, 0, 0)
+            color = point_color
 
-        cv2.circle(img_copy, (int(point[0]), int(point[1])), 2, color=color, thickness=-1)
+        cv2.circle(img_copy, (int(point[0]), int(point[1])), radius, color=color, thickness=-1)
     return img_copy
 
 def find_sk_line(hesse_line):
@@ -597,26 +600,28 @@ def find_sk_line(hesse_line):
     return skobj.Line(point, direction)
 
 def display_interpretation(image, interpretation, lines, circles):
-    point_img = image.copy()
+    point_img = cv2.copyMakeBorder(image, top=4, bottom=4, left=8, right=8, borderType=cv2.BORDER_CONSTANT, value=(255, 255, 255))
     for idx, point in enumerate(interpretation):
         hue = 179 * idx / len(interpretation.points)
         hsv = np.uint8([[[hue, 255, 255]]])
         rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]
-        int_coords = (int(point.coords[0]), int(point.coords[1]))
+        int_coords = (int(point.coords[0])+8, int(point.coords[1])+4)
 
         cv2.circle(point_img, int_coords, 2, rgb.tolist(), -1)
 
-        cv2.putText(point_img, point.label, int_coords, cv2.FONT_HERSHEY_DUPLEX, 0.75, (0, 0, 0))
+        cv2.putText(point_img, point.label, int_coords, cv2.FONT_HERSHEY_DUPLEX, 0.6, (0, 0, 0))
     line_img = draw_lines(image, lines)
     circle_img = draw_circles(image, circles)
-    cv2.imshow('lines', line_img)
-    cv2.imshow('circles', circle_img)
+    # cv2.imshow('lines', line_img)
+    # cv2.imshow('circles', circle_img)
     cv2.imwrite('samples/final.png', point_img)
     cv2.waitKey()
     cv2.destroyAllWindows()
 
 
-diagram = cv2.imread('../experiments/data/practice/043.png')
+diagram = cv2.imread('../experiments/data/images/023.png')
+# cv2.imshow('diagram', diagram)
+# cv2.waitKey()
 interpretation, lines, circles = parse_diagram(diagram)
 display_interpretation(diagram, interpretation, lines.values(), circles.values())
 # import os
