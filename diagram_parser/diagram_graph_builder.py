@@ -332,15 +332,6 @@ def get_primitives_and_points(image):
     response_map, corners = get_corners(filtered)
     intersections = get_merged_intersections(lines, circles, image.shape, response_map)
     text_regions = text_components_with_centroids(image)
-    cv2.imwrite('samples/original.png', gray)
-    cv2.imwrite('samples/text_removed.png', filtered)
-    cv2.imwrite('samples/circles.png', circle_img)
-    cv2.imwrite('samples/circle_removed.png', masked)
-    cv2.imwrite('samples/lines.png', draw_lines(cv2.cvtColor(masked, cv2.COLOR_GRAY2BGR), lines))
-    cv2.imwrite('samples/response_map.png', response_map)
-    cv2.imwrite('samples/points.png', draw_points(image, [*intersections, *corners]))
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
     return corners, lines, circles, intersections, text_regions
 
 
@@ -391,7 +382,6 @@ def build_interpretation(primitives, lines, circles, intersections, text_regions
     # PARAM diagram_graph_builder_clustering_eps
     dbscan_eps = Params.params['diagram_graph_builder_dbscan_eps']
     clustering = DBSCAN(eps=dbscan_eps * (image_shape[0] + image_shape[1]) / 2, min_samples=1).fit(primitive_list)
-    cv2.imwrite('samples/clusters.png', draw_points(image, primitive_list, clustering.labels_))
     cv2.waitKey()
     cluster_list = []
     num_clusters = max(clustering.labels_) + 1
@@ -612,9 +602,9 @@ def display_interpretation(image, interpretation, lines, circles):
         cv2.putText(point_img, point.label, int_coords, cv2.FONT_HERSHEY_DUPLEX, 0.6, (0, 0, 0))
     line_img = draw_lines(image, lines)
     circle_img = draw_circles(image, circles)
-    # cv2.imshow('lines', line_img)
-    # cv2.imshow('circles', circle_img)
-    cv2.imwrite('samples/final.png', point_img)
+    cv2.imshow('lines', line_img)
+    cv2.imshow('circles', circle_img)
+    cv2.imshow('points', point_img)
     cv2.waitKey()
     cv2.destroyAllWindows()
 

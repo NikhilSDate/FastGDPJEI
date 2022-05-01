@@ -270,8 +270,8 @@ def run_test(image_directory, annotation_path, image_set):
         print(total_precision)
         print(total_recall)
         print((2 * total_precision * total_recall) / (total_precision + total_recall))
-        with open('final_results/point_detection/point_complex_fastgdp.pickle', 'wb') as f:
-            pickle.dump(file_f1_info, f)
+        # with open('final_results/point_detection/point_complex_fastgdp.pickle', 'wb') as f:
+        #     pickle.dump(file_f1_info, f)
         return file_f1_scores, total_precision, total_recall
 
     except ZeroDivisionError:
@@ -285,8 +285,8 @@ def get_metrics(scores):
 
 
 def run_primitive_test(image_directory, annotation_path, image_set=None):
-    with open('geos/primitives_test.pickle', 'rb') as f:
-        primitives = pickle.load(f)
+    # with open('geos/primitives_test.pickle', 'rb') as f:
+    #     primitives = pickle.load(f)
 
     def process_primitives(primitives):
         lines = {}
@@ -341,8 +341,8 @@ def run_primitive_test(image_directory, annotation_path, image_set=None):
     print(total_precision)
     print(total_recall)
     print((2 * total_precision * total_recall) / (total_precision + total_recall))
-    with open('final_results/primitive_detection/primitive_test_geos.pickle', 'wb') as f:
-        pickle.dump(file_f1_info, f)
+    # with open('final_results/primitive_detection/primitive_test_geos.pickle', 'wb') as f:
+    #     pickle.dump(file_f1_info, f)
 
     return total_precision, total_recall
 
@@ -362,6 +362,6 @@ def run_time_test(task, image_directory, num_iters, file_set):
         print(f'iters done: {i+1}')
     keys = times[0].keys()
     final_times = {key:(sum([iter_times[key]/num_iters for iter_times in times])) for key in keys}
-    with open('final_results/time/test_fastgdp_complete_nolabel.pickle', 'wb') as f:
-        pickle.dump(final_times, f)
+    # with open('final_results/time/test_fastgdp_complete_nolabel.pickle', 'wb') as f:
+    #     pickle.dump(final_times, f)
 
