@@ -179,5 +179,7 @@ def resize_region(region, ):
              hierarchy[0][i][2] == -1 and hierarchy[0][i][3] != -1]
     inverted = cv2.cvtColor(cv2.bitwise_not(bordered), cv2.COLOR_GRAY2BGR)
     cv2.drawContours(inverted, contours, 1, thickness=1, color=[255, 0, 0])
-# image = cv2.imread('../symbols/100.png')
-# components = text_components_with_centroids(image)
+
+if __name__ == '__main__':
+    image = cv2.imread('../symbols/100.png')
+    components = text_components_with_centroids(image)

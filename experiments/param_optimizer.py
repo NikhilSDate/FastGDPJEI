@@ -1,13 +1,9 @@
-from experiments.tester import run_test, run_primitive_test, parse_annotations, run_time_test
-from hyperopt import hp, fmin, tpe, Trials, space_eval, atpe
+from experiments.tester import run_test, run_primitive_test, parse_annotations
+from hyperopt import hp, fmin, space_eval, atpe
 from hyperopt.fmin import generate_trials_to_calculate
 from experiments.params import Params
-from diagram_parser.diagram_graph_builder import parse_diagram, get_primitives_and_points, get_primitives
 import pickle
-import numpy as np
 import random
-import matplotlib.pyplot as plt
-import time
 
 
 class ParamOptimizer:
@@ -96,13 +92,11 @@ class ParamOptimizer:
         return space_eval(space, best_params)
 
 
-optimizer = ParamOptimizer(ParamOptimizer.point_optimization_objective, 'data/images/annotations.xml', 'data/images')
+optimizer = ParamOptimizer(ParamOptimizer.point_optimization_objective, 'data/test/annotations.xml', 'data/test/')
 #
 file_set = set()
 for file_name, _, _, _ in parse_annotations(optimizer.annotations_path):
-    if len(file_name) == 8:
+    if len(file_name) == 7:
         file_set.add(file_name)
 #
 optimizer.point_optimization_objective({}, file_set)
-# task = parse_diagram
-# run_time_test(parse_diagram, 'data/practice', 5, file_set)

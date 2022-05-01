@@ -249,11 +249,13 @@ def circles_IOU_close_enough(circle1, circle2, thresh=0.8):
         IOU = 0
     return IOU > thresh
 
-# img = cv2.imread('../experiments/data/images/0002.png')
-# gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-# circles = detect_circles(gray)
-# remove_circles(gray, circles)
-# if circles is not None:
-#     img = draw_circles(img, circles.astype(np.uint16))
-# cv2.imshow('circles', img)
-# cv2.waitKey()
+
+if __name__ == '__main__':
+    img = cv2.imread('../experiments/data/images/0002.png')
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    circles = detect_circles(gray)
+    remove_circles(gray, circles)
+    if circles is not None:
+        img = draw_circles(img, circles.astype(np.uint16))
+    cv2.imshow('circles', img)
+    cv2.waitKey()

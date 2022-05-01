@@ -1,1 +1,0 @@
-point detection after optimizations + updating space

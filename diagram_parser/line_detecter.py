@@ -4,10 +4,8 @@ from experiments.params import Params
 from numpy import arctan2
 from math import sqrt
 from math import pi
-import os
 from diagram_parser.text_detector import remove_text
-import matplotlib.pyplot as plt
-from sklearn.cluster import AgglomerativeClustering, DBSCAN
+from sklearn.cluster import DBSCAN
 
 
 def preprocess(img):
@@ -331,31 +329,24 @@ def get_filtered_lines(img, filter_method='cluster'):
                 hesse_lines = [np.array(hesse_normal_form(endpoints_line)) for endpoints_line in filtered_lines]
                 return hesse_lines
 
-# import os
-# import time
-# count = 0
-# selecting = 0
-# totalstart = time.time()
-# for filename in os.listdir('../symbols/'):
-#         if filename.endswith('.png'):
-#             diagram = cv2.imread('../symbols/'+filename)
-#             gray = cv2.cvtColor(diagram, cv2.COLOR_BGR2GRAY)
-#             gray = remove_text(gray)
-#             old_lines = get_filtered_lines(gray)
-#             new_lines = get_filtered_lines(gray, 'cluster')
-#             cv2.imshow('new lines', draw_lines(diagram, new_lines))
-#             cv2.imshow('old lines', draw_lines(diagram.copy(), old_lines))
-#             cv2.waitKey()
-#             # plt.show()
-#             cv2.destroyAllWindows()
-#             print(f'files done: {count}\r')
-#             print(filename)
+if __name__ == '__main__':
+    import os
+    import time
+    count = 0
+    selecting = 0
+    totalstart = time.time()
+    for filename in os.listdir('../symbols/'):
+            if filename.endswith('.png'):
+                diagram = cv2.imread('../symbols/'+filename)
+                gray = cv2.cvtColor(diagram, cv2.COLOR_BGR2GRAY)
+                gray = remove_text(gray)
+                old_lines = get_filtered_lines(gray)
+                new_lines = get_filtered_lines(gray, 'cluster')
+                cv2.imshow('new lines', draw_lines(diagram, new_lines))
+                cv2.imshow('old lines', draw_lines(diagram.copy(), old_lines))
+                cv2.waitKey()
+                # plt.show()
+                cv2.destroyAllWindows()
+                print(f'files done: {count}\r')
+                print(filename)
 
-# plt.xlim(0, 1)
-# plt.ylim(0, 1)
-# filtered_lines = get_filtered_lines(gray)
-# cv2.imshow('lines', draw_lines(diagram, averaged_lines))
-# cv2.imshow('old lines', draw_lines(diagram.copy(), filtered_lines))
-# # plt.scatter(x, y)
-# # plt.show()
-# cv2.waitKey()

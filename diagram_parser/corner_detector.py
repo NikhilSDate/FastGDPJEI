@@ -1,11 +1,5 @@
-# Python programe to illustrate
-# corner detection with
-# Harris Corner Detection Method
-
-# organizing imports
 import cv2.cv2 as cv2
 import numpy as np
-from diagram_parser.text_detector import remove_text
 from diagram_parser.text_detector import connected_components_and_threshold
 from experiments.params import Params
 
@@ -61,5 +55,9 @@ def draw_corners(image, points):
         cv2.circle(image_copy, tuple(int_point), 2, [0, 255, 0], thickness=-1)
     return image_copy
 
-# img = cv2.imread('../experiments/data/images/0030.png')
-# corners = get_corners(img)
+if __name__ == '__main__':
+    img = cv2.imread('../experiments/data/complex/0030.png')
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    corners = get_corners(gray)
+    cv2.imshow('corners', draw_corners(img, corners[1]))
+    cv2.waitKey()

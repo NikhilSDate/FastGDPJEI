@@ -1,3 +1,5 @@
+import pickle
+
 from tensorflow.keras import models
 from tensorflow.keras.layers import InputLayer
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -125,21 +127,9 @@ class CharacterPredictor:
         return is_upper, self.upper_confidence(character_sequence[0])
 
     def initialize_confused_labels(self):
-        test_datagen = ImageDataGenerator(rescale=1 / 255, validation_split=0.2)
-
-        validation_data = test_datagen.flow_from_directory('../English/Fnt/', subset='validation', target_size=(14, 14),
-                                                           class_mode='categorical', batch_size=128,
-                                                           color_mode='grayscale', seed=42, shuffle=False)
-        Y_pred = self.model.predict(validation_data)
-        y_pred = np.argmax(Y_pred, axis=1)
-        confusion_matrix = metrics.confusion_matrix(validation_data.classes, y_pred)
-        # PARAM confusion threshold
-        # confusion_threshold = Params.params['character_detector_confusion_threshold']
-        confusion_threshold = Params.params['character_detector_confusion_threshold']
-        confused_indices = np.transpose(np.where(confusion_matrix > confusion_threshold))
-        confused_indices_array = np.array([confused_indices[i] for i in range(len(confused_indices)) if
-                                           confused_indices[i][0] != confused_indices[i][1]])
-        map_function = lambda x: (self.labels[int(x[0])], self.labels[int(x[1])])
-
-        confused_labels = set([map_function(confused_index) for confused_index in confused_indices_array])
-        return confused_labels
+        try:
+            with open('../nn/confused_labels.pickle', 'rb') as f:
+                return pickle.load(f)
+        except FileNotFoundError as e:
+            print('Confused labels file not found! Please set the correct filepath.')
+            raise e

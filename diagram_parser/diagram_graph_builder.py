@@ -606,34 +606,10 @@ def display_interpretation(image, interpretation, lines, circles):
     cv2.destroyAllWindows()
 
 
-diagram = cv2.imread('../experiments/data/images/023.png')
-# cv2.imshow('diagram', diagram)
-# cv2.waitKey()
-interpretation, lines, circles = parse_diagram(diagram)
-display_interpretation(diagram, interpretation, lines.values(), circles.values())
-# import os
-# import time
-#
-# count = 0
-# selecting = 0
-# totalstart = time.time()
-# for filename in os.listdir('X:/image'):
-#     if filename.endswith('.png') and len(filename)==8:
-#         try:
-#             diagram = cv2.imread('X:/image/' + filename)
-#
-#             interpretation, lines, circles = parse_diagram(diagram)
-#             display_interpretation(diagram, interpretation, lines.values(), circles.values())
-#             stop = time.time()
-#             print(time.time() - totalstart)
-#             count += 1
-#             print(filename)
-#             print(f'files done: {count}\r')
-#         except IndexError:
-#             pass
-#         except ValueError:
-#             pass
-#
-# totalstop = time.time()
-# print(totalstop - totalstart)
-# print(selecting)
+if __name__ == '__main__':
+    diagram = cv2.imread('../experiments/data/train/000.png')
+    # cv2.imshow('diagram', diagram)
+    # cv2.waitKey()
+    interpretation, lines, circles = parse_diagram(diagram, detect_labels=True)
+    display_interpretation(diagram, interpretation, lines.values(), circles.values())
+
