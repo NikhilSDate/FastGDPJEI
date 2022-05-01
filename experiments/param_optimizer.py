@@ -98,5 +98,4 @@ file_set = set()
 for file_name, _, _, _ in parse_annotations(optimizer.annotations_path):
     if len(file_name) == 7:
         file_set.add(file_name)
-#
 optimizer.point_optimization_objective({}, file_set)
