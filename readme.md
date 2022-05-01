@@ -107,4 +107,5 @@ Finally, the properties for each point are determined
 
 Three datasets are provided in this repository. The first is the training data used by geosolver. 
 The second is a dataset containing significantly more complex data. The third is the geosolver test 
-dataset. 
+dataset. The images and annotations for each dataset can be found in the experiments/data directory.
+
