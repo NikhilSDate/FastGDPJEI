@@ -177,17 +177,14 @@ def line_circle_intersection(p1, v, q, r):
 
 def circle_circle_intersection(x0, y0, r0, x1, y1, r1):
     # http: // paulbourke.net / geometry / circlesphere /
-    try:
-        d = sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2)
-        a = (r0 ** 2 - r1 ** 2 + d ** 2) / (2 * d)
-        h = sqrt(r0 ** 2 - a ** 2)
-        x2 = x0 + a * (x1 - x0) / d
-        y2 = y0 + a * (y1 - y0) / d
-        sol1 = ((x2 + h * (y1 - y0) / d), (y2 - h * (x1 - x0) / d))
-        sol2 = ((x2 - h * (y1 - y0) / d), (y2 + h * (x1 - x0) / d))
-        return sol1, sol2
-    finally:
-        return [[], []]
+    d = sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2)
+    a = (r0 ** 2 - r1 ** 2 + d ** 2) / (2 * d)
+    h = sqrt(r0 ** 2 - a ** 2)
+    x2 = x0 + a * (x1 - x0) / d
+    y2 = y0 + a * (y1 - y0) / d
+    sol1 = ((x2 + h * (y1 - y0) / d), (y2 - h * (x1 - x0) / d))
+    sol2 = ((x2 - h * (y1 - y0) / d), (y2 + h * (x1 - x0) / d))
+    return sol1, sol2
 
 
 def point_to_line_distance(point_coordinates, line):
