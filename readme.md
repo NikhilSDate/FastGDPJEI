@@ -1,6 +1,10 @@
 # FastGDP
 
 ## Introduction
+This repository contains the code and data for the paper "An Efficient Approach to Automated Geometry Diagram Parsing" submitted 
+to the [Journal of Emerging Investigators](https://emerginginvestigators.org/). The paper
+has been Accepted Pending Presentation Changes. 
+
 FastGDP stands for Fast Geometry Diagram Parser. Given a geometry diagram, FastGDP can recognize lines, circles and points. Additionally, FastGDP 
 can determine which lines or circle each point lies on and of a point is the center of a circle.
 FastGDP can also detect text labels and associate them with points, but this functionality does not currently work very well. 
@@ -8,21 +12,31 @@ determined which lines or circle each point lies on and of a point is the center
 FastGDP is written to be modular which means that it is easy to make changes to the various components in order to improve them or customize them for a particular application.
 
 ## Quickstart
-- First clone or download the repository
+- Clone or download the repository
 
-- Import `parse_diagram` from `diagram_parser.diagram_graph_builder` file from the diagram_parser module
+- Import `parse_diagram` and `display_interpretation` from `diagram_parser.diagram_graph_builder` as follows:
+    ```python
+    from diagram_parser.diagram_graph_builder import parse_diagram, display_interpretation
+    ```
 
-- Load your diagram image using opencv (diagram image should be in the BGR format) and call the parse_diagram method on it. The parse_diagram method returns a tuple `(interpretation, lines, circles)`. 
-  `lines` and `circles` are both dictionaries. `interpretation` is an instance of the Interpretation class.
+- Load your diagram image using OpenCV (the diagram image should be in the BGR format) as follows:
   
-The following code example illustrates the steps above. 
+  ```python
+  img = cv2.imread('<image_path>')
+  ```
 
-```python
-from diagram_parser.diagram_graph_builder import parse_diagram
-import cv2
-img = cv2.imread('<image_path>')
-interpretation, lines, circles = parse_diagram(img)
-```
+- Call `parse_diagram`, passing the diagram image as follows:
+   ```python
+  interpretation, lines, circles = parse_diagram(img)
+  ```
+  The parse_diagram method returns a tuple `(interpretation, lines, circles)`. 
+  `lines` and `circles` are both dictionaries. `interpretation` is an instance of the `Interpretation` class.
+
+- Optionally call `display_interpretation` to visualize the detection result, passing the original diagram image, 
+  `interpretation`, `lines`, and `circles`:
+    ```python
+    display_interpretation(img, interpretation, lines, circles)
+    ```
 
 You can find more information on how to use the results of the `parse_diagram` method below
 
@@ -38,14 +52,14 @@ An `Interpretation` object contains the instance variables `points`, `lines`, an
 Each key in `circles` is the ID of a circle and the corresponding value of the circle specified in the (x, y, r) format where (x, y) are the coordinates of the center and r is the radius
 
 #### Point
-Iterating over interpretation in a for loop will yield the points in the interpretation one at a time. 
-The point object has instance variables `label`, which is the label of the point, `coords`, which are the coordinates of the point in the image, and `properties`, which is a list of the properties of the point.
-If a label is detected for a point, the label is a single uppercase letter. Otherwise, the label is of the form p<x> where x is an integer.
+Iterating over interpretation in a `for` loop will yield the points in the interpretation one at a time. 
+Each `Point` object has instance variables `label`, which is the label of the point, `coords`, which are the coordinates of the point in the image, and `properties`, which is a list of the properties of the point.
+If a label is detected for a point, the label is a single uppercase letter. Otherwise, the label is of the form `p<x>` where `x` is an integer.
 
 #### Point properties
 
 Each point property is a tuple where the first element is either the string "lieson" or the string "centerof" and the second element is the ID of either a line or a circle. 
-If the second element refers to a line, the ID is of the form l<x>, where x is an integer. The `lines` dictionary will contain l<x> as a key and the corresponding value will be the line in Hesse normal form.
+If the second element refers to a line, the ID is of the form `l<x>`, where `x` is an integer. The `lines` dictionary will contain l<x> as a key and the corresponding value will be the line in Hesse normal form.
 If the second element of the property tuple refers to a circle,  the ID is of the form c<x>, where c is an integer. The `circles` dictionary will contain x<x> as a key, and the corresponding value will be the circle in the (x, y, r) format.
 
 ## Datasets
