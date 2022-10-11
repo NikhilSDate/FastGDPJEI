@@ -1,18 +1,27 @@
 # FastGDP
 
 ## Introduction
-This repository contains the code and data for the paper "An Efficient Approach to Automated Geometry Diagram Parsing" submitted 
-to the [Journal of Emerging Investigators](https://emerginginvestigators.org/). The paper
-can be found [here](https://emerginginvestigators.org/articles/an-efficient-approach-to-automated-geometry-diagram-parsing).
+This repository contains the code and data for the paper "An Efficient Approach to Automated Geometry Diagram Parsing" published 
+in the [Journal of Emerging Investigators](https://emerginginvestigators.org/articles/an-efficient-approach-to-automated-geometry-diagram-parsing).
 
 FastGDP stands for Fast Geometry Diagram Parser. Given a geometry diagram, FastGDP can recognize lines, circles and points. Additionally, FastGDP 
-can determine which lines or circle each point lies on and of a point is the center of a circle.
+can determine which lines or circles a point lies on and of a point is the center of a circle.
 FastGDP can also detect text labels and associate them with points, but this functionality does not currently work very well. 
-determined which lines or circle each point lies on and of a point is the center of a circle.
+
 FastGDP is written to be modular which means that it is easy to make changes to the various components in order to improve them or customize them for a particular application.
 
 ## Quickstart
-- Clone or download the repository
+- Clone or download this repository
+
+- Open a command prompt window and install `OpenCV` as follows:
+    ```python
+    pip install opencv-python
+    ```
+    
+- Import `OpenCV` as follows:
+    ```python
+    import cv2
+    ```
 
 - Import `parse_diagram` and `display_interpretation` from `diagram_parser.diagram_graph_builder` as follows:
     ```python
@@ -38,10 +47,10 @@ FastGDP is written to be modular which means that it is easy to make changes to 
     display_interpretation(img, interpretation, lines, circles)
     ```
 
-You can find more information on how to use the results of the `parse_diagram` method below
+You can find more information on how to use the results of the `parse_diagram` method below.
 
 Note that FastGDP does not give good results if the diagram image is either very small or very large. 
-The best results are obtained when the width and height of the image are between 150 and 350 pixels
+The best results are obtained when the width and height of the image are between 150 and 350 pixels.
 
 ### How to use the results of `parse_diagram`
 `parse_diagram` returns a tuple `(interpretation, lines, circles)`.
@@ -49,7 +58,7 @@ The best results are obtained when the width and height of the image are between
 #### Interpretation
 An `Interpretation` object contains the instance variables `points`, `lines`, and `circles`. `points` is a list of instances of the `Point` class.
 `lines` and `circles` are both dictionaries. Each key in `lines` is the ID of a line (used to refer to that line in point properties) and the corresponding value is that line in Hesse normal form.
-Each key in `circles` is the ID of a circle and the corresponding value of the circle specified in the (x, y, r) format where (x, y) are the coordinates of the center and r is the radius
+Each key in `circles` is the ID of a circle and the corresponding value of the circle specified in the (x, y, r) format where (x, y) are the coordinates of the center and r is the radius.
 
 #### Point
 Iterating over interpretation in a `for` loop will yield the points in the interpretation one at a time. 
@@ -64,7 +73,5 @@ If the second element of the property tuple refers to a circle,  the ID is of th
 
 ## Datasets
 
-Three datasets are provided in this repository. The first is the training data used by geosolver. 
-The second is a dataset containing significantly more complex data. The third is the geosolver test 
-dataset. The images and annotations for each dataset can be found in the experiments/data directory.
+Three datasets are provided in this repository. The first is the training data used by geosolver. The second is a dataset containing significantly more complex data. The third is the geosolver test dataset. The images and annotations for each dataset can be found in the experiments/data directory.
 
