@@ -3,7 +3,7 @@
 ## Introduction
 This repository contains the code and data for the paper "An Efficient Approach to Automated Geometry Diagram Parsing" submitted 
 to the [Journal of Emerging Investigators](https://emerginginvestigators.org/). The paper
-has been Accepted Pending Presentation Changes. 
+can be found [here](https://emerginginvestigators.org/articles/an-efficient-approach-to-automated-geometry-diagram-parsing).
 
 FastGDP stands for Fast Geometry Diagram Parser. Given a geometry diagram, FastGDP can recognize lines, circles and points. Additionally, FastGDP 
 can determine which lines or circle each point lies on and of a point is the center of a circle.
