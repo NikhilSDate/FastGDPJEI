@@ -72,6 +72,7 @@ class CharacterPredictor:
 
         img = np.reshape(bordered, newshape=(bordered.shape[0], bordered.shape[1], 1))
         img = np.expand_dims(img, axis=0)
+        img = img/255 # normalize pixel values
         return img
 
     def predict_character(self, image, character_mode='all'):
